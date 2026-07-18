@@ -1,0 +1,1622 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>カジミエ | 家事みえる化ダッシュボード</title>
+<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🧺</text></svg>'>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#f9f9f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d0d0d" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="カジミエ">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  color-scheme:light;
+  --page:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,.10);
+  --s1:#2a78d6; --s2:#1baf7a; --s3:#eda100; --s4:#008300; --s5:#4a3aa7; --s8:#eb6834;
+  --accent:#2a78d6; --track:#cde2fb; --demph:#c3c2b7;
+  --good:#0ca30c; --warn:#fab219; --crit:#d03b3b; --good-text:#006300;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --page:#0d0d0d; --surface:#1a1a19; --ink:#ffffff; --ink2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10);
+    --s1:#3987e5; --s2:#199e70; --s3:#c98500; --s4:#008300; --s5:#9085e9; --s8:#d95926;
+    --accent:#3987e5; --track:#184f95; --demph:#52514e; --good-text:#0ca30c;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --page:#0d0d0d; --surface:#1a1a19; --ink:#ffffff; --ink2:#c3c2b7; --muted:#898781;
+  --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10);
+  --s1:#3987e5; --s2:#199e70; --s3:#c98500; --s4:#008300; --s5:#9085e9;
+  --accent:#3987e5; --track:#184f95; --demph:#52514e; --good-text:#0ca30c;
+}
+body{
+  background:var(--page); color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI","Hiragino Sans","Yu Gothic UI",sans-serif;
+  font-size:14px; line-height:1.6;
+}
+.wrap{max-width:1080px;margin:0 auto;padding:20px 16px 60px}
+header.app{display:flex;align-items:center;gap:12px;padding:6px 0 14px}
+header.app h1{font-size:20px;font-weight:700}
+header.app .sub{color:var(--ink2);font-size:12.5px}
+header.app .spacer{flex:1}
+.icon-btn{border:1px solid var(--border);background:var(--surface);border-radius:10px;
+  padding:6px 10px;cursor:pointer;font-size:15px;color:var(--ink)}
+nav.tabs{display:flex;gap:6px;position:sticky;top:0;z-index:20;background:var(--page);
+  padding:8px 0;border-bottom:1px solid var(--border);margin-bottom:18px;flex-wrap:wrap}
+nav.tabs button{border:1px solid transparent;background:none;color:var(--ink2);
+  font-size:13.5px;font-weight:600;padding:7px 14px;border-radius:999px;cursor:pointer}
+nav.tabs button:hover{background:var(--surface)}
+nav.tabs button.active{background:var(--surface);color:var(--ink);border-color:var(--border)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:18px;margin-bottom:16px}
+.card h2{font-size:14.5px;font-weight:700;margin-bottom:2px}
+.card .desc{color:var(--muted);font-size:12px;margin-bottom:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:760px){.grid2{grid-template-columns:1fr}}
+
+/* KPI tiles */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+@media(max-width:820px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.tile{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px}
+.t-label{font-size:12px;color:var(--ink2)}
+.t-row{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-top:2px}
+.t-value{font-size:26px;font-weight:700}
+.t-unit{font-size:13px;color:var(--ink2);font-weight:600}
+.t-delta{font-size:11.5px;font-weight:600}
+.t-delta.up{color:var(--good-text)}
+.t-delta.down{color:var(--muted)}
+.t-note{font-size:11px;color:var(--muted);margin-top:4px}
+.spark{display:block;margin-top:8px;width:100%;height:34px}
+
+/* filter row */
+.filter-row{display:flex;align-items:center;gap:10px;margin:2px 0 14px;flex-wrap:wrap}
+.filter-row .f-label{font-size:12.5px;color:var(--ink2);font-weight:600}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--surface)}
+.seg button{border:none;background:none;padding:6px 14px;font-size:12.5px;cursor:pointer;color:var(--ink2)}
+.seg button.active{background:var(--accent);color:#fff;font-weight:700}
+
+/* chart */
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px}
+.legend .lg{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink2)}
+.legend .lg i{width:12px;height:12px;border-radius:3px;display:inline-block}
+.chart-wrap{position:relative}
+.chart-wrap svg{width:100%;height:auto;display:block}
+svg .tick{font-size:11px;fill:var(--muted);font-variant-numeric:tabular-nums}
+svg .xlab{font-size:11px;fill:var(--muted)}
+svg .band{opacity:0;fill:var(--grid)}
+svg .band.hot{opacity:.45}
+svg.hovering .day{opacity:.65}
+svg.hovering .day.hot{opacity:1}
+svg .overlay{fill:transparent;outline:none;cursor:default}
+svg .overlay:focus-visible{stroke:var(--accent);stroke-width:2}
+.tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;padding:8px 12px;font-size:12px;min-width:150px;
+  box-shadow:0 4px 14px rgba(0,0,0,.12);display:none;z-index:10}
+.tip .tp-title{font-weight:700;margin-bottom:4px}
+.tip .tp-row{display:flex;align-items:center;gap:7px;padding:1px 0}
+.tip .tp-key{width:12px;height:3px;border-radius:2px;flex:none}
+.tip .tp-name{color:var(--ink2);flex:1}
+.tip .tp-val{font-weight:700;font-variant-numeric:tabular-nums}
+.tip .tp-total{border-top:1px solid var(--border);margin-top:4px;padding-top:4px}
+.tbl-toggle{margin-top:10px;font-size:12px;border:1px solid var(--border);background:none;
+  color:var(--ink2);border-radius:8px;padding:5px 12px;cursor:pointer}
+.tbl-wrap{overflow-x:auto;margin-top:10px}
+table.dtab{border-collapse:collapse;width:100%;font-size:12.5px}
+table.dtab th,table.dtab td{padding:5px 10px;border-bottom:1px solid var(--grid);text-align:right;
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+table.dtab th:first-child,table.dtab td:first-child{text-align:left}
+table.dtab th{color:var(--ink2);font-weight:600}
+.empty-note{color:var(--muted);font-size:12.5px;padding:18px 0;text-align:center}
+
+/* category bars */
+.cat-row{display:grid;grid-template-columns:8.5em 1fr auto;align-items:center;gap:10px;padding:7px 0}
+.cat-name{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink2)}
+.cat-name i{width:10px;height:10px;border-radius:3px;flex:none}
+.cat-track{height:16px}
+.cat-fill{height:16px;border-radius:0 4px 4px 0;min-width:2px}
+.cat-val{font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
+.cat-val small{color:var(--muted);font-weight:400;margin-left:4px}
+
+/* meter */
+.meter{height:10px;border-radius:999px;background:var(--track);overflow:hidden}
+.meter>div{height:100%;border-radius:999px;background:var(--accent)}
+.meter.neutral{background:var(--grid)}
+.big-pct{font-size:30px;font-weight:700}
+
+/* rate compare */
+.rate-row{display:grid;grid-template-columns:11em 1fr auto;align-items:center;gap:10px;padding:5px 0}
+.rate-row .r-label{font-size:12.5px;color:var(--ink2)}
+.rate-row .r-bar{height:14px;border-radius:0 4px 4px 0;min-width:2px}
+.rate-row .r-val{font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
+
+/* lists */
+.rank li{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--grid);
+  font-size:13px;list-style:none}
+.rank li:last-child{border-bottom:none}
+.rank .rk-name{flex:1}
+.rank .rk-meta{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+
+.rec-list{list-style:none}
+.rec-list li{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--grid)}
+.rec-list li:last-child{border-bottom:none}
+.rec-emoji{font-size:19px;flex:none}
+.rec-main{flex:1;min-width:0}
+.rec-name{font-size:13.5px;font-weight:600}
+.rec-meta{font-size:11.5px;color:var(--muted)}
+.ghost-tag{font-size:10.5px;color:var(--ink2);background:var(--grid);border-radius:999px;
+  padding:1px 8px;margin-left:6px;white-space:nowrap}
+.thanks-btn{border:1px solid var(--border);background:none;border-radius:999px;color:var(--ink);
+  padding:4px 12px;font-size:13px;cursor:pointer;flex:none}
+.thanks-btn:hover{background:var(--track)}
+.del-btn{border:none;background:none;color:var(--muted);cursor:pointer;font-size:14px;padding:4px}
+
+/* record tab */
+.point-note{background:var(--track);border-radius:12px;padding:12px 16px;font-size:13px;margin-bottom:16px}
+/* 一覧テーブル（記録・ストック共通のシンプル表） */
+table.rowtab{border-collapse:collapse;width:100%;font-size:13px}
+.rowtab th{font-size:11.5px;color:var(--muted);font-weight:600;text-align:left;
+  padding:6px 10px;border-bottom:1px solid var(--axis);white-space:nowrap}
+.rowtab th.num{text-align:right}
+.rowtab td{padding:7px 8px;border-bottom:1px solid var(--grid);vertical-align:middle}
+.rowtab tbody tr:last-child td{border-bottom:none}
+.rowtab tbody tr:hover{background:color-mix(in srgb,var(--grid) 40%,transparent)}
+.rowtab .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.rowtab .nm{font-weight:600;white-space:nowrap}
+.rowtab .sub{font-size:11px;color:var(--muted);margin-top:2px;font-weight:400;white-space:nowrap}
+.cat-tag{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink2);white-space:nowrap}
+.cat-tag i{width:9px;height:9px;border-radius:2px;flex:none}
+.mini-btn{border:1px solid var(--border);background:none;color:var(--ink);border-radius:7px;
+  padding:3px 10px;font-size:12px;cursor:pointer;white-space:nowrap;text-decoration:none;display:inline-block}
+.mini-btn:hover{border-color:var(--accent)}
+.mini-btn.icon{width:26px;height:26px;padding:0;text-align:center;font-size:14px;line-height:24px}
+.st-flag{font-size:11.5px;font-weight:600;white-space:nowrap}
+.st-flag.warn{color:var(--ink)}
+.st-flag.okc{color:var(--good-text)}
+.st-flag.mut{color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--border);background:var(--surface);border-radius:999px;
+  padding:6px 14px;font-size:12.5px;cursor:pointer;color:var(--ink)}
+.chip:hover{border-color:var(--accent)}
+form.free{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:end}
+form.free label{font-size:11.5px;color:var(--ink2);display:block}
+form.free input,form.free select{width:100%;padding:7px 9px;border:1px solid var(--border);
+  border-radius:8px;background:var(--page);color:var(--ink);font-size:13px}
+.btn{border:none;background:var(--accent);color:#fff;font-weight:700;border-radius:9px;
+  padding:9px 16px;font-size:13px;cursor:pointer}
+.btn.ghost{background:none;border:1px solid var(--border);color:var(--ink2);font-weight:600}
+.btn.small{padding:6px 12px;font-size:12px}
+.danger-zone{display:flex;gap:10px;flex-wrap:wrap}
+
+/* stock */
+.sub-sel{padding:4px 6px;border:1px solid var(--border);border-radius:7px;
+  background:var(--page);color:var(--ink);font-size:12px;max-width:170px}
+.policy-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.policy-note{font-size:11.5px;color:var(--muted)}
+.u-dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:6px}
+.u-dot.sm{width:7px;height:7px;margin-right:3px}
+.stock-summary{font-size:12px;color:var(--ink2);margin:0 0 12px;line-height:1.8}
+.share-sub{font-size:11px;color:var(--muted);margin:-2px 0 8px}
+
+/* report */
+.hero-num{font-size:52px;font-weight:700;line-height:1.15}
+.hero-unit{font-size:18px;color:var(--ink2);font-weight:700;margin-left:4px}
+.rep-stats{display:flex;gap:26px;flex-wrap:wrap;margin:12px 0}
+.rep-stats .rs .v{font-size:20px;font-weight:700}
+.rep-stats .rs .l{font-size:11.5px;color:var(--ink2)}
+.share-bar{display:flex;gap:2px;height:18px;border-radius:6px;overflow:hidden;margin:12px 0 10px}
+.share-bar>div{min-width:3px}
+.share-legend{display:flex;flex-direction:column;gap:4px}
+.share-legend .sl{display:flex;align-items:center;gap:8px;font-size:12.5px}
+.share-legend .sl i{width:11px;height:11px;border-radius:3px;flex:none}
+.share-legend .sl .n{color:var(--ink2);flex:1}
+.share-legend .sl .v{font-weight:700;font-variant-numeric:tabular-nums}
+
+footer.app{color:var(--muted);font-size:11.5px;margin-top:24px;line-height:1.8}
+
+#toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(10px);
+  background:var(--ink);color:var(--page);padding:10px 18px;border-radius:999px;font-size:13px;
+  opacity:0;transition:.25s;pointer-events:none;z-index:99;max-width:88vw;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="app">
+  <div>
+    <h1>🧺 カジミエ</h1>
+    <div class="sub">家事みえる化ダッシュボード — 「見えない家事」をちゃんと評価する</div>
+  </div>
+  <div class="spacer"></div>
+  <div class="seg" id="userSeg" title="入力するユーザーを切り替え"></div>
+  <button class="icon-btn" id="installBtn" hidden>📲 アプリとして追加</button>
+  <button class="icon-btn" id="themeBtn" title="ライト/ダーク切替">🌓</button>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button data-tab="dashboard" class="active">📊 ダッシュボード</button>
+  <button data-tab="record">✏️ 記録する</button>
+  <button data-tab="clean">🧹 掃除</button>
+  <button data-tab="stock">📦 ストック管理</button>
+  <button data-tab="report">📮 週間レポート</button>
+</nav>
+
+<!-- ============ ダッシュボード ============ -->
+<section id="tab-dashboard">
+  <div class="kpis" id="kpis"></div>
+
+  <div class="filter-row">
+    <span class="f-label">グラフの表示期間</span>
+    <div class="seg" id="rangeSeg">
+      <button data-days="7" class="active">7日</button>
+      <button data-days="14">14日</button>
+      <button data-days="30">30日</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>日別の家事ポイント</h2>
+    <div class="desc">1日ごとの家事ポイントを積み上げ表示。ポイント＝時間×見えにくさ係数</div>
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:10px">
+      <div class="seg" id="chartBySeg">
+        <button data-b="cat" class="active">カテゴリ別</button>
+        <button data-b="user">担当者別</button>
+      </div>
+      <div class="legend" id="stackLegend" style="margin-bottom:0"></div>
+    </div>
+    <div class="chart-wrap" id="stackWrap"></div>
+    <button class="tbl-toggle" id="tblToggle">表で見る</button>
+    <div class="tbl-wrap" id="tblWrap" hidden></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>カテゴリ別の合計</h2>
+      <div class="desc">表示期間内のポイント合計</div>
+      <div id="catBars"></div>
+    </div>
+    <div class="card">
+      <h2>👻 見えにくい家事の見える化</h2>
+      <div class="desc">洗濯・掃除・補充など、やっても気づかれにくい家事</div>
+      <div id="invisibleCard"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>夫婦の分担</h2>
+    <div class="desc">表示期間内のポイント分担。「見えにくい家事」をどちらが担っているかも見えます</div>
+    <div id="shareCard"></div>
+  </div>
+
+  <div class="card">
+    <h2>最近の記録</h2>
+    <div class="desc">家族は 👏 ボタンで「ありがとう」を伝えられます</div>
+    <ul class="rec-list" id="recentList"></ul>
+  </div>
+</section>
+
+<!-- ============ 記録 ============ -->
+<section id="tab-record" hidden>
+  <div class="point-note">
+    💡 <b>ポイント = 時間（分）× 見えにくさ係数</b>。
+    食事のように評価されやすい家事は係数1.0、洗濯物を畳む・トイレ掃除のような
+    「見えにくい家事」ほど係数が高く（最大2.0）、がんばりが数字に反映されます。
+  </div>
+
+  <div class="card">
+    <h2>ワンタップで記録</h2>
+    <div class="desc">👻 は「見えにくい家事」。「記録」を押すとその場で追加されます</div>
+    <div class="tbl-wrap" id="choreGrid" style="margin-top:4px"></div>
+  </div>
+
+  <div class="card">
+    <h2>👻 名もなき家事</h2>
+    <div class="desc">気づかれないけど誰かがやっている家事。全部 係数2.0 で記録します</div>
+    <div class="chips" id="namelessChips"></div>
+  </div>
+
+  <div class="card">
+    <h2>自由に記録</h2>
+    <form class="free" id="freeForm">
+      <div style="grid-column:span 2">
+        <label for="ff-name">家事の名前</label>
+        <input id="ff-name" type="text" placeholder="例：カーテンの洗濯" required>
+      </div>
+      <div>
+        <label for="ff-cat">カテゴリ</label>
+        <select id="ff-cat"></select>
+      </div>
+      <div>
+        <label for="ff-min">時間（分）</label>
+        <input id="ff-min" type="number" min="1" max="600" value="15">
+      </div>
+      <div>
+        <label for="ff-coef">見えにくさ</label>
+        <select id="ff-coef">
+          <option value="1">1.0 よく見える</option>
+          <option value="1.2">1.2 まあ見える</option>
+          <option value="1.5" selected>1.5 見えにくい</option>
+          <option value="1.8">1.8 かなり見えにくい</option>
+          <option value="2">2.0 ほぼ見えない</option>
+        </select>
+      </div>
+      <div>
+        <label for="ff-date">日付</label>
+        <input id="ff-date" type="date">
+      </div>
+      <div><button class="btn" type="submit">記録する</button></div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>ユーザー設定</h2>
+    <div class="desc">夫婦それぞれの名前。画面右上で「いま入力する人」を切り替えられます</div>
+    <form class="free" id="userForm">
+      <div><label for="un-u1">ユーザー1</label><input id="un-u1" type="text"></div>
+      <div><label for="un-u2">ユーザー2</label><input id="un-u2" type="text"></div>
+      <div><button class="btn" type="submit">保存</button></div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>データ管理</h2>
+    <div class="desc">初回起動時はイメージをつかむためのサンプルデータが入っています</div>
+    <div class="danger-zone">
+      <button class="btn ghost small" id="reseedBtn">サンプルデータを再生成</button>
+      <button class="btn ghost small" id="clearBtn">すべての記録を削除してゼロから始める</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 掃除 ============ -->
+<section id="tab-clean" hidden>
+  <div class="card">
+    <h2>定期掃除の期限</h2>
+    <div class="desc">「風呂の防カビは1ヶ月に1回」「換気扇は3ヶ月に1回」のような定期掃除の期限を見える化。「✔ やった」を押すと完了として記録され、家事ポイントにもなります（👻 見えにくい家事）</div>
+    <div class="stock-summary" id="cleanSummary"></div>
+    <div class="tbl-wrap" id="cleanGrid" style="margin-top:4px"></div>
+  </div>
+
+  <div class="card">
+    <h2>定期掃除を追加</h2>
+    <div class="desc">追加した日を「前回やった日」として数え始めます（見えにくさ係数1.6で記録）</div>
+    <form class="free" id="cleanForm">
+      <div style="grid-column:span 2">
+        <label for="cf-name">タスク名</label>
+        <input id="cf-name" type="text" placeholder="例：ソファ下の掃除" required>
+      </div>
+      <div>
+        <label for="cf-cycle">周期</label>
+        <select id="cf-cycle"></select>
+      </div>
+      <div>
+        <label for="cf-min">時間（分）</label>
+        <input id="cf-min" type="number" min="1" max="600" value="15">
+      </div>
+      <div>
+        <label for="cf-cat">カテゴリ</label>
+        <select id="cf-cat"></select>
+      </div>
+      <div><button class="btn" type="submit">追加する</button></div>
+    </form>
+  </div>
+</section>
+
+<!-- ============ ストック ============ -->
+<section id="tab-stock" hidden>
+  <div class="card">
+    <h2>日用品ストック</h2>
+    <div class="desc">使ったら − ボタンで記録。消費ペースを学習して、定期おトク便の<b>おすすめ頻度</b>を自動計算します。お届きボタンを押すと在庫が増え、補充作業も家事として自動記録されます（👻 係数2.0）</div>
+    <div class="policy-row">
+      <span class="f-label">在庫方針</span>
+      <div class="seg" id="policySeg">
+        <button data-p="min">🏠 省スペース（最小在庫）</button>
+        <button data-p="full">📦 たっぷり安心</button>
+      </div>
+      <span class="policy-note" id="policyNote"></span>
+    </div>
+    <div class="stock-summary" id="stockSummary"></div>
+    <div style="margin:0 0 12px">
+      <button class="mini-btn" id="bundleBtn">⚡ おまとめプランを提案（15%OFF狙い）</button>
+      <div id="bundlePlan"></div>
+    </div>
+    <div class="tbl-wrap" id="stockGrid" style="margin-top:4px"></div>
+  </div>
+
+  <div class="card">
+    <h2>品目を追加</h2>
+    <form class="free" id="stockForm">
+      <div style="grid-column:span 2">
+        <label for="st-name">品名</label>
+        <input id="st-name" type="text" placeholder="例：食器用スポンジ" required>
+      </div>
+      <div>
+        <label for="st-max">満タン数</label>
+        <input id="st-max" type="number" min="1" max="99" value="3">
+      </div>
+      <div>
+        <label for="st-qty">現在の数</label>
+        <input id="st-qty" type="number" min="0" max="99" value="3">
+      </div>
+      <div>
+        <label for="st-low">残りわずかライン</label>
+        <input id="st-low" type="number" min="0" max="99" value="1">
+      </div>
+      <div>
+        <label for="st-pack">1回のお届け量</label>
+        <input id="st-pack" type="number" min="1" max="99" value="1">
+      </div>
+      <div>
+        <label for="st-price">1パックの価格（円・任意）</label>
+        <input id="st-price" type="number" min="0" max="99999" placeholder="例：398">
+      </div>
+      <div>
+        <label for="st-unit">単位</label>
+        <input id="st-unit" type="text" value="個">
+      </div>
+      <div style="grid-column:span 2">
+        <label for="st-kw">Amazon検索ワード（省略時は品名）</label>
+        <input id="st-kw" type="text" placeholder="例：食器用スポンジ 詰め替え">
+      </div>
+      <div><button class="btn" type="submit">追加する</button></div>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="desc" style="margin:0">
+      ※「Amazonで注文」ボタンは Amazon.co.jp の検索ページを開く簡易連携です。
+      定期おトク便の頻度設定はこのアプリ内での目安管理で、実際の申込み・頻度変更・
+      スキップはAmazon側の定期おトク便設定で行ってください（おすすめ頻度をそのまま選べばOK）。
+      省スペース方針では、小さめのパック（例：トイレットペーパー4ロール）を短い間隔で
+      受け取るのがコツ。在庫が多めと出たら次回分をスキップすると棚が空きます。
+      本格的な連携（価格取得・ワンクリック注文・定期便の自動化）は
+      Amazon Product Advertising API / Amazon Business API で拡張できます。
+    </div>
+  </div>
+</section>
+
+<!-- ============ 週間レポート ============ -->
+<section id="tab-report" hidden>
+  <div class="card" id="reportCard"></div>
+  <div class="card">
+    <h2>家族に共有する</h2>
+    <div class="desc">レポートをテキストにして、家族のLINEグループなどに貼り付けられます</div>
+    <button class="btn" id="copyBtn">📋 レポートをコピー</button>
+  </div>
+</section>
+
+<footer class="app">
+  データはこの端末のブラウザ内（localStorage）にのみ保存され、外部には送信されません。<br>
+  📲 スマホではブラウザのメニューから「ホーム画面に追加」でアプリとして使えます（iPhoneは共有ボタン→「ホーム画面に追加」）。一度開けばオフラインでも動作します。<br>
+  カジミエ — 「名もなき家事」に名前とポイントを。
+</footer>
+
+</div>
+<div id="toast" role="status"></div>
+
+<script>
+'use strict';
+
+/* ---------- マスタ ---------- */
+const CATS = {
+  laundry:{name:'洗濯',        color:'var(--s1)'},
+  clean:  {name:'掃除',        color:'var(--s2)'},
+  cook:   {name:'料理',        color:'var(--s3)'},
+  shop:   {name:'買い物・補充', color:'var(--s4)'},
+  other:  {name:'その他',      color:'var(--s5)'},
+};
+const CAT_ORDER = ['laundry','clean','cook','shop','other'];
+const INVISIBLE_COEF = 1.4; // これ以上は「見えにくい家事」
+
+const CHORES = [
+  {id:'wash',    name:'洗濯（洗う・干す）',     cat:'laundry', min:25, coef:1.5, emoji:'🧺'},
+  {id:'fold',    name:'洗濯物を畳む・しまう',   cat:'laundry', min:15, coef:1.8, emoji:'👕'},
+  {id:'vacuum',  name:'掃除機がけ',             cat:'clean',   min:20, coef:1.5, emoji:'🧹'},
+  {id:'bath',    name:'風呂掃除',               cat:'clean',   min:15, coef:1.6, emoji:'🛁'},
+  {id:'toilet',  name:'トイレ掃除',             cat:'clean',   min:10, coef:1.8, emoji:'🚽'},
+  {id:'sink',    name:'キッチン・シンク掃除',   cat:'clean',   min:10, coef:1.7, emoji:'🫧'},
+  {id:'cook',    name:'食事作り',               cat:'cook',    min:45, coef:1.0, emoji:'🍳'},
+  {id:'dishes',  name:'皿洗い・片付け',         cat:'cook',    min:15, coef:1.3, emoji:'🍽️'},
+  {id:'bento',   name:'お弁当作り',             cat:'cook',    min:20, coef:1.2, emoji:'🍱'},
+  {id:'shopping',name:'買い出し',               cat:'shop',    min:40, coef:1.2, emoji:'🛒'},
+  {id:'restock', name:'日用品の補充・詰め替え', cat:'shop',    min:5,  coef:2.0, emoji:'🧴'},
+  {id:'trash',   name:'ゴミ出し・ゴミまとめ',   cat:'other',   min:10, coef:1.7, emoji:'🗑️'},
+  {id:'mail',    name:'郵便物・書類の処理',     cat:'other',   min:10, coef:1.9, emoji:'📮'},
+  {id:'tidy',    name:'部屋の片付け',           cat:'other',   min:15, coef:1.5, emoji:'🧸'},
+];
+
+const NAMELESS = [
+  {name:'洗剤・シャンプーの詰め替え', cat:'shop',  min:5},
+  {name:'トイレットペーパーの交換',   cat:'clean', min:2},
+  {name:'排水口のゴミ取り',           cat:'clean', min:5},
+  {name:'献立を考える',               cat:'cook',  min:10},
+  {name:'子どもの持ち物準備',         cat:'other', min:10},
+  {name:'タオルの交換',               cat:'laundry', min:3},
+  {name:'ゴミ袋のセット',             cat:'other', min:2},
+];
+
+/* usageDays = 1単位を使い切る平均日数（サンプル消費ペースの生成用）
+   pack = 定期便1回のお届け量 / price = 1パックの価格（円・コスト目安の計算用） */
+const SEED_STOCK = [
+  {name:'洗濯洗剤',           emoji:'🧴', max:3,  qty:1, low:1,  unit:'本',   kw:'洗濯洗剤 詰め替え',        usageDays:21,  subFreq:30, pack:1,  price:398},
+  {name:'柔軟剤',             emoji:'🌸', max:2,  qty:2, low:1,  unit:'本',   kw:'柔軟剤 詰め替え',          usageDays:28,             pack:1,  price:348},
+  {name:'食器用洗剤',         emoji:'🫧', max:2,  qty:1, low:1,  unit:'本',   kw:'食器用洗剤 詰め替え',      usageDays:18,             pack:1,  price:178},
+  {name:'トイレットペーパー', emoji:'🧻', max:12, qty:3, low:2,  unit:'ロール', kw:'トイレットペーパー 4ロール', usageDays:2.5, subFreq:7,  pack:4,  price:258},
+  {name:'キッチンペーパー',   emoji:'🧻', max:4,  qty:2, low:1,  unit:'本',   kw:'キッチンペーパー 2ロール',  usageDays:9,              pack:2,  price:218},
+  {name:'ゴミ袋 45L',         emoji:'🗑️', max:30, qty:8, low:10, unit:'枚',   kw:'ゴミ袋 45L 30枚',          usageDays:2.3, subFreq:90, pack:30, price:458},
+  {name:'シャンプー詰替',     emoji:'🚿', max:2,  qty:0, low:1,  unit:'袋',   kw:'シャンプー 詰め替え',      usageDays:30,             pack:1,  price:598},
+  {name:'ハンドソープ',       emoji:'🧼', max:2,  qty:1, low:1,  unit:'本',   kw:'ハンドソープ 詰め替え',    usageDays:25,             pack:1,  price:248},
+];
+function genUsage(daysPerUnit){
+  const now=Date.now(),out=[];
+  const horizon=Math.min(170,Math.max(70,daysPerUnit*4.5));
+  let t=now-horizon*864e5;
+  while(t<now){out.push({ts:Math.round(t),n:1});t+=daysPerUnit*864e5*(0.75+Math.random()*0.5);}
+  return out;
+}
+function seedStockItems(){
+  return SEED_STOCK.map(s=>{
+    const {usageDays,...rest}=s;
+    return {id:uid(),subFreq:0,...rest,
+      usage:usageDays?genUsage(usageDays):[],
+      lastRefill:usageDays?Date.now()-Math.round((s.max-s.qty)*usageDays*864e5):null};
+  });
+}
+
+/* ---------- 状態 ---------- */
+const LS = {rec:'kajimie.records', stock:'kajimie.stock', seeded:'kajimie.seeded', theme:'kajimie.theme', policy:'kajimie.policy', users:'kajimie.users', curUser:'kajimie.curUser', clean:'kajimie.clean'};
+const DEFAULT_USERS=[{id:'u1',name:'わたし'},{id:'u2',name:'パートナー'}];
+const USER_COLORS={u1:'var(--s1)',u2:'var(--s8)'};
+const state = {records:[], stock:[], clean:[], range:7, policy:'min', users:DEFAULT_USERS, curUser:'u1', chartBy:'cat'};
+function uName(id){const u=state.users.find(x=>x.id===id);return u?u.name:'—';}
+
+function uid(){return (crypto.randomUUID ? crypto.randomUUID() : Date.now()+'-'+Math.random());}
+function loadJSON(k,f){try{const v=localStorage.getItem(k);return v?JSON.parse(v):f;}catch(e){return f;}}
+function saveJSON(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function saveAll(){saveJSON(LS.rec,state.records);saveJSON(LS.stock,state.stock);saveJSON(LS.clean,state.clean);}
+
+/* ---------- 日付ユーティリティ ---------- */
+const WD = ['日','月','火','水','木','金','土'];
+function startOfDay(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate());}
+function dayKey(d){return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
+function lastNDays(n){
+  const now=new Date(), a=[];
+  for(let i=n-1;i>=0;i--)a.push(new Date(now.getFullYear(),now.getMonth(),now.getDate()-i));
+  return a;
+}
+function weekStartMon(d){
+  const s=startOfDay(d);
+  return new Date(s.getFullYear(),s.getMonth(),s.getDate()-((s.getDay()+6)%7));
+}
+function fmtMD(d){return (d.getMonth()+1)+'/'+d.getDate();}
+function fmtN(n){return Math.round(n).toLocaleString('ja-JP');}
+function fmtDur(min){
+  min=Math.round(min);
+  if(min<60)return min+'分';
+  const h=Math.floor(min/60),m=min%60;
+  return m? h+'時間'+m+'分' : h+'時間';
+}
+
+/* ---------- DOMヘルパー（動的テキストは常にtextContent経由） ---------- */
+function h(tag,attrs={},...kids){
+  const e=document.createElement(tag);
+  for(const [k,v] of Object.entries(attrs)){
+    if(k==='class')e.className=v;
+    else if(k.startsWith('on'))e.addEventListener(k.slice(2),v);
+    else if(k==='style')e.style.cssText=v;
+    else e.setAttribute(k,v);
+  }
+  for(const kid of kids.flat(9)){
+    if(kid==null||kid===false)continue;
+    e.append(kid.nodeType?kid:document.createTextNode(String(kid)));
+  }
+  return e;
+}
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._tm); t._tm=setTimeout(()=>t.classList.remove('show'),2300);
+}
+
+/* ---------- 記録 ---------- */
+function makeRecord({name,cat,min,coef,emoji,ts,thanks,user}){
+  return {id:uid(),name,cat,min,coef,emoji:emoji||'📝',user:user||state.curUser,
+    pt:Math.round(min*coef),ts,thanks:thanks||0};
+}
+function addRecord(data,opts={}){
+  const r=makeRecord(data);
+  state.records.push(r);
+  saveAll();
+  if(!opts.silent)toast('「'+data.name+'」を記録しました（'+uName(r.user)+' +'+r.pt+'pt）');
+  renderAll();
+}
+function isInvisible(r){return r.coef>=INVISIBLE_COEF;}
+
+/* ---------- サンプルデータ ---------- */
+/* u1p = ユーザー1が担当する確率（サンプルの分担イメージ） */
+const SEED_PLAN=[
+  {id:'cook',p:.85,hh:18,mm:30,th:.6,u1p:.75},
+  {id:'dishes',p:.9,hh:19,mm:45,th:.15,u1p:.35},
+  {id:'bento',p:.45,hh:6,mm:30,wd:true,th:.35,u1p:.8},
+  {id:'wash',p:.7,hh:7,mm:20,th:.1,u1p:.65},
+  {id:'fold',p:.6,hh:21,mm:0,th:.08,u1p:.6},
+  {id:'vacuum',p:.45,hh:10,mm:0,th:.1,u1p:.4},
+  {id:'bath',p:.55,hh:21,mm:30,th:.05,u1p:.3},
+  {id:'toilet',p:.3,hh:9,mm:0,th:.05,u1p:.55},
+  {id:'sink',p:.35,hh:20,mm:30,th:.05,u1p:.6},
+  {id:'shopping',p:.3,hh:16,mm:0,th:.2,u1p:.5},
+  {id:'restock',p:.25,hh:11,mm:0,th:.05,u1p:.7},
+  {id:'trash',days:[1,4],p:.9,hh:7,mm:0,th:.05,u1p:.2},
+  {id:'mail',p:.3,hh:17,mm:30,th:.05,u1p:.8},
+  {id:'tidy',p:.45,hh:15,mm:0,th:.08,u1p:.5},
+];
+function seedRecords(){
+  const out=[],now=Date.now();
+  for(let i=27;i>=0;i--){
+    const day=lastNDays(28)[27-i];
+    const dow=day.getDay();
+    for(const p of SEED_PLAN){
+      if(p.wd&&(dow===0||dow===6))continue;
+      if(p.days&&!p.days.includes(dow))continue;
+      if(Math.random()>=p.p)continue;
+      const c=CHORES.find(x=>x.id===p.id);
+      const ts=new Date(day.getFullYear(),day.getMonth(),day.getDate(),p.hh,p.mm+Math.floor(Math.random()*40-15)).getTime();
+      if(ts>now)continue;
+      const thanks=Math.random()<p.th?(Math.random()<.3?2:1):0;
+      const user=Math.random()<(p.u1p==null?0.5:p.u1p)?'u1':'u2';
+      out.push(makeRecord({name:c.name,cat:c.cat,min:c.min,coef:c.coef,emoji:c.emoji,ts,thanks,user}));
+    }
+  }
+  return out;
+}
+
+/* ---------- 集計 ---------- */
+function recordsIn(fromTs,toTs){return state.records.filter(r=>r.ts>=fromTs&&r.ts<toTs);}
+function sumPt(rs){return rs.reduce((a,r)=>a+r.pt,0);}
+function sumMin(rs){return rs.reduce((a,r)=>a+r.min,0);}
+function sumThanks(rs){return rs.reduce((a,r)=>a+(r.thanks||0),0);}
+function seriesDefs(){
+  return state.chartBy==='user'
+    ? state.users.map(u=>({key:u.id,name:u.name,color:USER_COLORS[u.id]}))
+    : CAT_ORDER.map(c=>({key:c,name:CATS[c].name,color:CATS[c].color}));
+}
+function aggregateDays(days){
+  const byUser=state.chartBy==='user';
+  const map=new Map(days.map(d=>[dayKey(d),{date:d,cats:{},total:0}]));
+  for(const r of state.records){
+    const o=map.get(dayKey(new Date(r.ts)));
+    if(o){const k=byUser?(r.user||'u1'):r.cat;o.cats[k]=(o.cats[k]||0)+r.pt;o.total+=r.pt;}
+  }
+  return [...map.values()];
+}
+function rangeRecords(){
+  const days=lastNDays(state.range);
+  const from=days[0].getTime(), to=Date.now()+1;
+  return recordsIn(from,to);
+}
+
+/* ---------- KPI ---------- */
+function renderKPIs(){
+  const now=new Date(),t0=startOfDay(now).getTime(),d1=864e5;
+  const todayPts=sumPt(recordsIn(t0,t0+d1));
+  const ydayPts=sumPt(recordsIn(t0-d1,t0));
+  const ws=weekStartMon(now).getTime(), elapsed=Date.now()-ws;
+  const wk=recordsIn(ws,ws+7*d1), lastWk=recordsIn(ws-7*d1,ws-7*d1+elapsed);
+  const wkMin=sumMin(wk), lastWkMin=sumMin(lastWk);
+  const wkPt=sumPt(wk), invPt=sumPt(wk.filter(isInvisible));
+  const invShare=wkPt? Math.round(invPt/wkPt*100):null;
+  const wkTh=sumThanks(wk), lastWkTh=sumThanks(lastWk);
+
+  const daily=aggregateDays(lastNDays(14)).map(d=>d.total);
+
+  function delta(cur,prev,suffix){
+    const diff=Math.round(cur-prev);
+    if(diff===0)return h('span',{class:'t-delta down'},'±0 '+suffix);
+    return h('span',{class:'t-delta '+(diff>0?'up':'down')},(diff>0?'▲':'▼')+fmtN(Math.abs(diff))+' '+suffix);
+  }
+  const box=document.getElementById('kpis');
+  box.replaceChildren(
+    h('div',{class:'tile'},
+      h('div',{class:'t-label'},'今日の家事ポイント'),
+      h('div',{class:'t-row'},h('span',{class:'t-value'},fmtN(todayPts)),h('span',{class:'t-unit'},'pt'),delta(todayPts,ydayPts,'昨日比')),
+      sparkline(daily)),
+    h('div',{class:'tile'},
+      h('div',{class:'t-label'},'今週の家事時間'),
+      h('div',{class:'t-row'},h('span',{class:'t-value'},fmtDur(wkMin)),delta(wkMin,lastWkMin,'先週の同時点比（分）')),
+      h('div',{class:'t-note'},wk.length+'件の家事（月曜起点）')),
+    h('div',{class:'tile'},
+      h('div',{class:'t-label'},'見えにくい家事の割合（今週）'),
+      h('div',{class:'t-row'},h('span',{class:'t-value'},invShare==null?'—':invShare+'%')),
+      (()=>{const m=h('div',{class:'meter',style:'margin-top:8px'},h('div',{style:'width:'+(invShare||0)+'%'}));return m;})(),
+      h('div',{class:'t-note'},'洗濯・掃除・補充など評価されにくい家事')),
+    h('div',{class:'tile'},
+      h('div',{class:'t-label'},'今週もらった「ありがとう」'),
+      h('div',{class:'t-row'},h('span',{class:'t-value'},'👏 '+fmtN(wkTh)),delta(wkTh,lastWkTh,'先週の同時点比')),
+      h('div',{class:'t-note'},'最近の記録の 👏 ボタンから'))
+  );
+}
+function sparkline(vals){
+  const w=140,ht=34,pad=4,max=Math.max(...vals,1);
+  const step=(w-pad*2)/(vals.length-1||1);
+  const pts=vals.map((v,i)=>[pad+i*step, ht-pad-(v/max)*(ht-pad*2)]);
+  const dAttr=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join('');
+  const last=pts[pts.length-1];
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('viewBox','0 0 '+w+' '+ht);
+  svg.setAttribute('class','spark');
+  svg.setAttribute('aria-label','過去14日間の日別ポイント推移');
+  svg.innerHTML='<path d="'+dAttr+'" fill="none" stroke="var(--demph)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>'+
+    '<circle cx="'+last[0].toFixed(1)+'" cy="'+last[1].toFixed(1)+'" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/>';
+  return svg;
+}
+
+/* ---------- 積み上げ棒グラフ ---------- */
+function niceStep(x){
+  const p=Math.pow(10,Math.floor(Math.log10(Math.max(x,1e-6))));
+  const n=x/p;
+  const s=n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10;
+  return s*p;
+}
+function roundTop(x,y,w,ht,r){
+  r=Math.min(r,w/2,ht);
+  return 'M'+x+' '+(y+ht)+'V'+(y+r)+'Q'+x+' '+y+' '+(x+r)+' '+y+'H'+(x+w-r)+'Q'+(x+w)+' '+y+' '+(x+w)+' '+(y+r)+'V'+(y+ht)+'Z';
+}
+function renderStacked(){
+  const days=lastNDays(state.range);
+  const data=aggregateDays(days);
+  const wrapEl=document.getElementById('stackWrap');
+  const defs=seriesDefs();
+
+  document.getElementById('stackLegend').replaceChildren(
+    ...defs.map(s=>h('span',{class:'lg'},h('i',{style:'background:'+s.color}),s.name))
+  );
+
+  const maxV=Math.max(...data.map(d=>d.total));
+  if(maxV===0){
+    wrapEl.replaceChildren(h('div',{class:'empty-note'},'この期間の記録はまだありません。「記録する」タブから家事を追加してみましょう'));
+    document.getElementById('tblWrap').replaceChildren();
+    return;
+  }
+  const W=760,H=292,pl=46,pr=10,ptop=12,pb=30;
+  const pw=W-pl-pr,ph=H-ptop-pb;
+  const step=niceStep(maxV/4);
+  const yMax=Math.max(step,Math.ceil(maxV/step)*step);
+  const y=v=>ptop+ph-(v/yMax)*ph;
+  const band=pw/data.length;
+  const bw=Math.min(24,band*0.62);
+  const lbEvery=data.length>16?3:1;
+
+  let s='';
+  for(let v=0;v<=yMax;v+=step){
+    s+='<line x1="'+pl+'" y1="'+y(v)+'" x2="'+(W-pr)+'" y2="'+y(v)+'" stroke="var(--grid)" stroke-width="1"/>';
+    s+='<text class="tick" x="'+(pl-8)+'" y="'+(y(v)+4)+'" text-anchor="end">'+fmtN(v)+'</text>';
+  }
+  s+='<line x1="'+pl+'" y1="'+y(0)+'" x2="'+(W-pr)+'" y2="'+y(0)+'" stroke="var(--axis)" stroke-width="1"/>';
+
+  data.forEach((d,i)=>{
+    const x0=pl+band*i, bx=x0+(band-bw)/2;
+    s+='<rect class="band" data-band="'+i+'" x="'+x0+'" y="'+ptop+'" width="'+band+'" height="'+ph+'"/>';
+    const segs=[];let acc=0;
+    for(const sd of defs){const v=d.cats[sd.key]||0;if(v>0){segs.push({color:sd.color,a0:acc,a1:acc+v});acc+=v;}}
+    s+='<g class="day" data-day="'+i+'">';
+    segs.forEach((sg,si)=>{
+      const isTop=si===segs.length-1,isBot=si===0;
+      const top=y(sg.a1)+(isTop?0:1),bot=y(sg.a0)-(isBot?0:1);
+      const hgt=bot-top;
+      if(hgt<=0.6)return;
+      if(isTop)s+='<path d="'+roundTop(bx,top,bw,hgt,4)+'" fill="'+sg.color+'"/>';
+      else s+='<rect x="'+bx+'" y="'+top+'" width="'+bw+'" height="'+hgt+'" fill="'+sg.color+'"/>';
+    });
+    s+='</g>';
+    if(i%lbEvery===0||i===data.length-1){
+      s+='<text class="xlab" x="'+(x0+band/2)+'" y="'+(H-8)+'" text-anchor="middle">'+fmtMD(d.date)+'</text>';
+    }
+  });
+  // 透明のヒット領域（列全体・キーボードフォーカス可）
+  data.forEach((d,i)=>{
+    const label=fmtMD(d.date)+' 合計'+fmtN(d.total)+'ポイント';
+    s+='<rect class="overlay" data-i="'+i+'" tabindex="0" role="img" aria-label="'+label+'" x="'+(pl+band*i)+'" y="'+ptop+'" width="'+band+'" height="'+ph+'"/>';
+  });
+
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('viewBox','0 0 '+W+' '+H);
+  svg.innerHTML=s;
+  const tip=h('div',{class:'tip'});
+  wrapEl.replaceChildren(svg,tip);
+
+  function showTip(i,px,py){
+    const d=data[i];
+    tip.replaceChildren(
+      h('div',{class:'tp-title'},fmtMD(d.date)+'（'+WD[d.date.getDay()]+'）'),
+      ...defs.filter(sd=>d.cats[sd.key]).map(sd=>h('div',{class:'tp-row'},
+        h('span',{class:'tp-key',style:'background:'+sd.color}),
+        h('span',{class:'tp-name'},sd.name),
+        h('span',{class:'tp-val'},fmtN(d.cats[sd.key])))),
+      h('div',{class:'tp-row tp-total'},
+        h('span',{class:'tp-name'},'合計'),
+        h('span',{class:'tp-val'},fmtN(d.total)+'pt'))
+    );
+    tip.style.display='block';
+    const wr=wrapEl.getBoundingClientRect();
+    let lx=px-wr.left+14, ly=py-wr.top-10;
+    if(lx+tip.offsetWidth>wr.width-4)lx=px-wr.left-tip.offsetWidth-14;
+    ly=Math.max(2,Math.min(ly,wr.height-tip.offsetHeight-2));
+    tip.style.left=lx+'px';tip.style.top=ly+'px';
+    svg.classList.add('hovering');
+    svg.querySelectorAll('.day').forEach(g=>g.classList.toggle('hot',g.dataset.day==i));
+    svg.querySelectorAll('.band').forEach(b=>b.classList.toggle('hot',b.dataset.band==i));
+  }
+  function hideTip(){
+    tip.style.display='none';
+    svg.classList.remove('hovering');
+    svg.querySelectorAll('.hot').forEach(e=>e.classList.remove('hot'));
+  }
+  svg.querySelectorAll('.overlay').forEach(o=>{
+    const i=+o.dataset.i;
+    o.addEventListener('pointermove',ev=>showTip(i,ev.clientX,ev.clientY));
+    o.addEventListener('pointerleave',hideTip);
+    o.addEventListener('focus',()=>{
+      const r=o.getBoundingClientRect();
+      showTip(i,r.left+r.width/2,r.top+30);
+    });
+    o.addEventListener('blur',hideTip);
+  });
+
+  // 表ビュー
+  const tw=document.getElementById('tblWrap');
+  tw.replaceChildren(h('table',{class:'dtab'},
+    h('thead',{},h('tr',{},h('th',{},'日付'),...defs.map(sd=>h('th',{},sd.name)),h('th',{},'合計'))),
+    h('tbody',{},data.map(d=>h('tr',{},
+      h('td',{},fmtMD(d.date)+'（'+WD[d.date.getDay()]+'）'),
+      ...defs.map(sd=>h('td',{},d.cats[sd.key]?fmtN(d.cats[sd.key]):'—')),
+      h('td',{},fmtN(d.total)))))
+  ));
+}
+
+/* ---------- カテゴリ別バー ---------- */
+function renderCatBars(){
+  const rs=rangeRecords();
+  const totals=CAT_ORDER.map(c=>{
+    const cr=rs.filter(r=>r.cat===c);
+    return {c,pt:sumPt(cr),n:cr.length};
+  });
+  const max=Math.max(...totals.map(t=>t.pt),1);
+  const box=document.getElementById('catBars');
+  if(rs.length===0){box.replaceChildren(h('div',{class:'empty-note'},'記録がありません'));return;}
+  box.replaceChildren(...totals.map(t=>h('div',{class:'cat-row'},
+    h('span',{class:'cat-name'},h('i',{style:'background:'+CATS[t.c].color}),CATS[t.c].name),
+    h('div',{class:'cat-track'},h('div',{class:'cat-fill',style:'background:'+CATS[t.c].color+';width:'+(t.pt/max*100)+'%'})),
+    h('span',{class:'cat-val'},fmtN(t.pt)+'pt',h('small',{},t.n+'件'))
+  )));
+}
+
+/* ---------- 見えにくい家事カード ---------- */
+function renderInvisible(){
+  const rs=rangeRecords();
+  const box=document.getElementById('invisibleCard');
+  if(rs.length===0){box.replaceChildren(h('div',{class:'empty-note'},'記録がありません'));return;}
+  const inv=rs.filter(isInvisible), vis=rs.filter(r=>!isInvisible(r));
+  const share=Math.round(sumPt(inv)/Math.max(sumPt(rs),1)*100);
+  const rate=g=>g.length?Math.round(g.filter(r=>r.thanks>0).length/g.length*100):null;
+  const rv=rate(vis),ri=rate(inv);
+
+  const byName=new Map();
+  for(const r of inv){
+    const o=byName.get(r.name)||{name:r.name,emoji:r.emoji,n:0,min:0};
+    o.n++;o.min+=r.min;byName.set(r.name,o);
+  }
+  const top=[...byName.values()].sort((a,b)=>b.n-a.n).slice(0,5);
+
+  box.replaceChildren(
+    h('div',{},
+      h('span',{class:'big-pct'},share+'%'),
+      h('span',{style:'color:var(--ink2);font-size:12.5px;margin-left:8px'},'が見えにくい家事のポイント')),
+    h('div',{class:'meter',style:'margin:8px 0 16px'},h('div',{style:'width:'+share+'%'})),
+    h('div',{style:'font-size:12.5px;font-weight:700;margin-bottom:4px'},'「ありがとう」をもらえた割合'),
+    h('div',{class:'rate-row'},
+      h('span',{class:'r-label'},'見えやすい家事（料理など）'),
+      h('div',{},h('div',{class:'r-bar',style:'background:var(--demph);width:'+Math.max(rv||0,2)+'%'})),
+      h('span',{class:'r-val'},rv==null?'—':rv+'%')),
+    h('div',{class:'rate-row'},
+      h('span',{class:'r-label'},'👻 見えにくい家事'),
+      h('div',{},h('div',{class:'r-bar',style:'background:var(--accent);width:'+Math.max(ri||0,2)+'%'})),
+      h('span',{class:'r-val'},ri==null?'—':ri+'%')),
+    h('div',{style:'font-size:12.5px;font-weight:700;margin:14px 0 2px'},'よくやっている見えにくい家事'),
+    h('ul',{class:'rank'},top.map(t=>h('li',{},
+      h('span',{},t.emoji),
+      h('span',{class:'rk-name'},t.name),
+      h('span',{class:'rk-meta'},'×'+t.n+'回・計'+fmtDur(t.min)))))
+  );
+}
+
+/* ---------- 夫婦の分担 ---------- */
+function renderShare(){
+  const box=document.getElementById('shareCard');
+  const rs=rangeRecords();
+  if(rs.length===0){box.replaceChildren(h('div',{class:'empty-note'},'記録がありません'));return;}
+  const total=Math.max(sumPt(rs),1);
+  box.replaceChildren(...state.users.flatMap(u=>{
+    const urs=rs.filter(r=>(r.user||'u1')===u.id);
+    const pt=sumPt(urs),pct=Math.round(pt/total*100);
+    const inv=Math.round(sumPt(urs.filter(isInvisible))/Math.max(pt,1)*100);
+    return [
+      h('div',{class:'rate-row'},
+        h('span',{class:'r-label'},h('i',{class:'u-dot',style:'background:'+USER_COLORS[u.id]}),u.name),
+        h('div',{},h('div',{class:'r-bar',style:'background:'+USER_COLORS[u.id]+';width:'+Math.max(pct,2)+'%'})),
+        h('span',{class:'r-val'},fmtN(pt)+'pt（'+pct+'%）')),
+      h('div',{class:'share-sub'},urs.length+'件 ・ うち見えにくい家事'+inv+'% ・ 👏'+sumThanks(urs)),
+    ];
+  }));
+}
+
+/* ---------- 最近の記録 ---------- */
+function renderRecent(){
+  const list=document.getElementById('recentList');
+  const rs=[...state.records].sort((a,b)=>b.ts-a.ts).slice(0,10);
+  if(rs.length===0){list.replaceChildren(h('div',{class:'empty-note'},'まだ記録がありません'));return;}
+  list.replaceChildren(...rs.map(r=>{
+    const d=new Date(r.ts);
+    const meta=fmtMD(d)+'（'+WD[d.getDay()]+'）'+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')
+      +' ・ '+r.min+'分 ・ '+fmtN(r.pt)+'pt';
+    return h('li',{},
+      h('span',{class:'rec-emoji'},r.emoji),
+      h('div',{class:'rec-main'},
+        h('div',{class:'rec-name'},r.name, isInvisible(r)&&h('span',{class:'ghost-tag'},'👻 見えにくい家事')),
+        h('div',{class:'rec-meta'},meta+' ・ ',
+          h('i',{class:'u-dot sm',style:'background:'+(USER_COLORS[r.user||'u1']||'var(--demph)')}),
+          uName(r.user||'u1'))),
+      h('button',{class:'thanks-btn',title:'ありがとうを伝える',onclick:()=>{
+        r.thanks=(r.thanks||0)+1;saveAll();renderAll();toast('👏 ありがとうを伝えました');
+      }},'👏 '+(r.thanks||0)),
+      h('button',{class:'del-btn',title:'削除',onclick:()=>{
+        if(confirm('「'+r.name+'」の記録を削除しますか？')){
+          state.records=state.records.filter(x=>x.id!==r.id);saveAll();renderAll();
+        }
+      }},'✕')
+    );
+  }));
+}
+
+/* ---------- 記録タブ ---------- */
+function renderRecordTab(){
+  document.getElementById('choreGrid').replaceChildren(
+    h('table',{class:'rowtab',style:'min-width:520px'},
+      h('thead',{},h('tr',{},
+        h('th',{},'家事'),h('th',{},'カテゴリ'),
+        h('th',{class:'num'},'時間'),h('th',{class:'num'},'ポイント'),h('th',{},''))),
+      h('tbody',{},CHORES.map(c=>h('tr',{},
+        h('td',{},h('span',{class:'nm'},c.emoji+' '+c.name),
+          c.coef>=INVISIBLE_COEF?h('span',{title:'見えにくい家事（係数'+c.coef+'）',style:'margin-left:5px'},'👻'):null),
+        h('td',{},h('span',{class:'cat-tag'},h('i',{style:'background:'+CATS[c.cat].color}),CATS[c.cat].name)),
+        h('td',{class:'num'},c.min+'分'),
+        h('td',{class:'num'},Math.round(c.min*c.coef)+'pt'),
+        h('td',{style:'text-align:right'},
+          h('button',{class:'mini-btn',onclick:()=>addRecord({name:c.name,cat:c.cat,min:c.min,coef:c.coef,emoji:c.emoji,ts:Date.now()})},'記録')))))));
+  document.getElementById('namelessChips').replaceChildren(...NAMELESS.map(nm=>
+    h('button',{class:'chip',onclick:()=>addRecord({name:nm.name,cat:nm.cat,min:nm.min,coef:2.0,emoji:'👻',ts:Date.now()})},
+      nm.name+'（'+nm.min+'分）')
+  ));
+  const sel=document.getElementById('ff-cat');
+  if(!sel.options.length)
+    sel.replaceChildren(...CAT_ORDER.map(c=>h('option',{value:c},CATS[c].name)));
+  const dt=document.getElementById('ff-date');
+  if(!dt.value){
+    const n=new Date();
+    dt.value=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
+  }
+  const i1=document.getElementById('un-u1'),i2=document.getElementById('un-u2');
+  if(document.activeElement!==i1)i1.value=state.users[0].name;
+  if(document.activeElement!==i2)i2.value=state.users[1].name;
+}
+
+/* ---------- 定期おトク便 ---------- */
+const FREQS=[
+  {d:0,  label:'定期便なし'},
+  {d:7,  label:'1週間ごと'},
+  {d:14, label:'2週間ごと'},
+  {d:21, label:'3週間ごと'},
+  {d:30, label:'1ヶ月ごと'},
+  {d:60, label:'2ヶ月ごと'},
+  {d:90, label:'3ヶ月ごと'},
+  {d:120,label:'4ヶ月ごと'},
+  {d:180,label:'6ヶ月ごと'},
+];
+function freqLabel(d){const f=FREQS.find(x=>x.d===d);return f?f.label:d+'日ごと';}
+function recommendFreq(cycleDays){
+  let rec=7;
+  for(const f of FREQS)if(f.d>0&&f.d<=cycleDays)rec=f.d;
+  return rec;
+}
+/* 直近180日の使用記録から消費ペースとおすすめ頻度を推定。
+   省スペース方針: 1回1パック（pack単位）を消費ペースに合わせた間隔で受け取り、
+   棚には「1パック＋3日分」以上を置かない。
+   たっぷり安心方針: お届けで満タン（max単位）まで補充、1割の安全マージン付き */
+function usageStats(it){
+  const now=Date.now();
+  const us=(it.usage||[]).filter(u=>u.ts>now-180*864e5);
+  if(us.length<3)return null;
+  const span=(now-Math.min(...us.map(u=>u.ts)))/864e5;
+  if(span<7)return null;
+  const perDay=us.reduce((a,u)=>a+(u.n||1),0)/span;
+  if(perDay<=0)return null;
+  const pack=Math.max(1,it.pack||1);
+  const deliver=pack*Math.max(1,it.subQty||1);
+  const minMode=state.policy==='min';
+  const daysLeft=it.qty/perDay;
+  const idealCycle=minMode?(deliver/perDay)*1.05:(it.max/perDay)*0.9;
+  const rec=recommendFreq(idealCycle);
+  let fit=null;
+  if(it.subFreq>0){
+    if(it.subFreq===rec)fit='ok';
+    else if(it.subFreq>idealCycle*1.2)fit='late';
+    else if(it.subFreq<idealCycle*0.8)fit='surplus';
+    else fit='ok';
+  }
+  const maxShelf=minMode?Math.min(it.max,Math.max(deliver,Math.round(deliver+perDay*3))):it.max;
+  const overstock=minMode&&it.qty>maxShelf;
+  const costM=it.price>0?it.price*perDay*30/pack:null;
+  let next=null;
+  if(it.subFreq>0&&it.lastRefill){
+    next=it.lastRefill;
+    while(next<=now)next+=it.subFreq*864e5;
+  }
+  return {perDay,daysLeft,idealCycle,rec,fit,next,pack,deliver,maxShelf,overstock,costM};
+}
+function shelfText(it,st){
+  const q=Math.max(1,it.subQty||1);
+  return state.policy==='min'
+    ? '1回のお届け: '+st.deliver+it.unit+(q>1?'（'+st.pack+it.unit+'×'+q+'）':'')
+      +' ・ 棚の最大目安: 約'+st.maxShelf+it.unit+'（容量'+it.max+it.unit+'）'
+    : 'お届けで満タンまで補充（容量'+it.max+it.unit+'）';
+}
+function paceShort(it,st){
+  const perWeek=st.perDay*7;
+  const rate=perWeek>=1
+    ? '週'+(Math.round(perWeek*10)/10)+it.unit
+    : '月'+(Math.round(st.perDay*30*10)/10)+it.unit;
+  const left=it.qty<=0?'在庫切れ':'あと約'+Math.max(1,Math.round(st.daysLeft))+'日';
+  return rate+'・'+left+(st.next?'・次回'+fmtMD(new Date(st.next)):'')
+    +(st.costM?'・月約¥'+fmtN(st.costM):'');
+}
+function renderStockSummary(){
+  const box=document.getElementById('stockSummary');
+  let total=0,has=false;
+  for(const it of state.stock){const us=usageStats(it);if(us&&us.costM){total+=us.costM;has=true;}}
+  const nSub=state.stock.filter(i=>i.subFreq>0).length;
+  const kids=[];
+  if(has)kids.push(h('div',{},'💰 月あたりコスト目安: ¥'+fmtN(total)
+    +'（定期便10%OFFで ¥'+fmtN(total*0.9)+' ／ おまとめ15%OFFなら ¥'+fmtN(total*0.85)+'）'));
+  kids.push(h('div',{},'🔁 定期便設定中: '+nSub+'品目'
+    +(nSub>=5?' — 同じお届け日にまとめると15%OFFの「おまとめ割引」対象です🎉'
+      :' — 同じお届け日に5品目以上そろえると15%OFF（おまとめ割引）。あと'+(5-nSub)+'品目')));
+  box.replaceChildren(...kids);
+}
+function paceText(it,st){
+  const perWeek=st.perDay*7;
+  const rate=perWeek>=1
+    ? '週あたり約'+(Math.round(perWeek*10)/10)+it.unit
+    : '月あたり約'+(Math.round(st.perDay*30*10)/10)+it.unit;
+  const left=it.qty<=0?'在庫切れ中':'在庫はあと約'+Math.max(1,Math.round(st.daysLeft))+'日';
+  return '消費ペース: '+rate+' ・ '+left;
+}
+
+/* ---------- 定期掃除（期限の見える化） ---------- */
+const CLEAN_CYCLES=[
+  {d:3,label:'3日ごと'},{d:7,label:'1週間ごと'},{d:14,label:'2週間ごと'},
+  {d:30,label:'1ヶ月ごと'},{d:60,label:'2ヶ月ごと'},{d:90,label:'3ヶ月ごと'},
+  {d:180,label:'半年ごと'},{d:365,label:'1年ごと'},
+];
+/* f = 周期のうち経過している割合（サンプルの前回実施日の生成用） */
+const SEED_CLEAN=[
+  {name:'風呂の防カビ・カビ取り',       emoji:'🛁', cycle:30, min:15, cat:'clean',   coef:1.6, f:1.2},
+  {name:'洗濯槽クリーナー',             emoji:'🌀', cycle:30, min:10, cat:'laundry', coef:1.8, f:0.95},
+  {name:'排水口の徹底掃除',             emoji:'🚿', cycle:14, min:10, cat:'clean',   coef:1.7, f:0.5},
+  {name:'エアコンフィルター',           emoji:'❄️', cycle:30, min:15, cat:'clean',   coef:1.7, f:0.65},
+  {name:'換気扇・レンジフード',         emoji:'💨', cycle:90, min:30, cat:'clean',   coef:1.7, f:1.05},
+  {name:'トイレの徹底掃除（タンク・壁）',emoji:'🚽', cycle:30, min:20, cat:'clean',   coef:1.8, f:0.35},
+  {name:'電子レンジ・冷蔵庫の拭き掃除', emoji:'🧊', cycle:60, min:20, cat:'clean',   coef:1.6, f:0.9},
+  {name:'窓・網戸',                     emoji:'🪟', cycle:90, min:40, cat:'clean',   coef:1.5, f:0.3},
+  {name:'シーツ・布団カバーの洗濯',     emoji:'🛏️', cycle:14, min:15, cat:'laundry', coef:1.5, f:0.98},
+  {name:'玄関・ベランダの掃き掃除',     emoji:'🏠', cycle:14, min:15, cat:'clean',   coef:1.5, f:0.2},
+  {name:'加湿器・空気清浄機フィルター', emoji:'🌫️', cycle:30, min:10, cat:'clean',   coef:1.7, f:0.75},
+];
+function cycleLabel(d){const c=CLEAN_CYCLES.find(x=>x.d===d);return c?c.label:d+'日ごと';}
+function seedCleanTasks(){
+  const now=Date.now();
+  return SEED_CLEAN.map(t=>({id:uid(),name:t.name,emoji:t.emoji,cycle:t.cycle,
+    min:t.min,cat:t.cat,coef:t.coef,last:Math.round(now-t.cycle*t.f*864e5)}));
+}
+function cleanInfo(t){
+  const now=Date.now();
+  const next=t.last+t.cycle*864e5;
+  const daysLeft=Math.ceil((next-now)/864e5);
+  const pct=Math.min(100,Math.round((now-t.last)/(t.cycle*864e5)*100));
+  const st=daysLeft<0?'over':daysLeft<=3?'soon':'ok';
+  return {next,daysLeft,pct,st};
+}
+function renderClean(){
+  const rows=state.clean.map(t=>({t,i:cleanInfo(t)})).sort((a,b)=>a.i.daysLeft-b.i.daysLeft);
+  const nOver=rows.filter(r=>r.i.st==='over').length;
+  const nSoon=rows.filter(r=>r.i.st==='soon').length;
+  document.getElementById('cleanSummary').replaceChildren(h('div',{},
+    nOver||nSoon
+      ?'🚨 期限切れ '+nOver+'件 ・ ⚠️ 3日以内 '+nSoon+'件 ・ 余裕あり '+(rows.length-nOver-nSoon)+'件'
+      :'✅ すべて期限内です'));
+  document.getElementById('cleanGrid').replaceChildren(
+    h('table',{class:'rowtab',style:'min-width:640px'},
+      h('thead',{},h('tr',{},h('th',{},'タスク'),h('th',{},'周期'),h('th',{},'期限'),h('th',{style:'text-align:right'},'操作'))),
+      h('tbody',{},rows.map(({t,i})=>{
+        const fill=i.st==='over'?'var(--crit)':i.st==='soon'?'var(--warn)':'var(--accent)';
+        const flag=i.st==='over'?h('span',{class:'st-flag warn'},'🚨 '+(-i.daysLeft)+'日超過')
+          :i.st==='soon'?h('span',{class:'st-flag warn'},i.daysLeft<=0?'⚠️ 今日が期限':'⚠️ あと'+i.daysLeft+'日')
+          :h('span',{class:'st-flag mut'},'あと'+i.daysLeft+'日');
+        const sel=h('select',{class:'sub-sel','aria-label':t.name+'の周期',onchange:ev=>{
+          t.cycle=+ev.target.value;saveAll();renderClean();
+          toast('「'+t.name+'」の周期を'+cycleLabel(t.cycle)+'にしました');
+        }},CLEAN_CYCLES.map(c=>h('option',{value:c.d},c.label)));
+        sel.value=String(t.cycle);
+        const lastD=new Date(t.last);
+        return h('tr',{},
+          h('td',{},
+            h('div',{class:'nm'},t.emoji+' '+t.name+' ',h('span',{title:'見えにくい家事（係数'+t.coef+'）'},'👻')),
+            h('div',{class:'sub'},'前回 '+fmtMD(lastD)+'（'+WD[lastD.getDay()]+'）・'+t.min+'分・'+Math.round(t.min*t.coef)+'pt')),
+          h('td',{},sel),
+          h('td',{style:'white-space:nowrap'},
+            h('div',{},
+              h('div',{class:'meter neutral',style:'width:76px;display:inline-block;vertical-align:middle;margin-right:8px'},
+                h('div',{style:'background:'+fill+';width:'+i.pct+'%'})),
+              flag),
+            h('div',{class:'sub'},'次回期限 '+fmtMD(new Date(i.next))+'（'+WD[new Date(i.next).getDay()]+'）')),
+          h('td',{style:'text-align:right;white-space:nowrap'},
+            h('button',{class:'mini-btn',onclick:()=>{
+              t.last=Date.now();
+              addRecord({name:t.name,cat:t.cat,min:t.min,coef:t.coef,emoji:t.emoji,ts:Date.now()});
+            }},'✔ やった'),
+            ' ',
+            h('button',{class:'mini-btn icon',title:'削除',onclick:()=>{
+              if(confirm('「'+t.name+'」を定期掃除から削除しますか？')){
+                state.clean=state.clean.filter(x=>x.id!==t.id);saveAll();renderClean();
+              }
+            }},'✕')));
+      }))));
+  const cs=document.getElementById('cf-cycle');
+  if(!cs.options.length){
+    cs.replaceChildren(...CLEAN_CYCLES.map(c=>h('option',{value:c.d},c.label)));
+    cs.value='30';
+  }
+  const cc=document.getElementById('cf-cat');
+  if(!cc.options.length){
+    cc.replaceChildren(...CAT_ORDER.map(c=>h('option',{value:c},CATS[c].name)));
+    cc.value='clean';
+  }
+}
+
+/* ---------- おまとめプラン（同じお届け日に揃えて15%OFF） ----------
+   30日の倍数の頻度＋1回の数量調整で、全品目を「月イチのお届け日」に相乗りさせる案 */
+let bundleOpen=false;
+function bundleProposal(){
+  const out=[];
+  for(const it of state.stock){
+    const us=usageStats(it);
+    if(!us)continue;
+    const pack=Math.max(1,it.pack||1);
+    const base=pack/us.perDay;
+    let F,q;
+    if(base>=30){F=Math.min(180,30*Math.floor(base/30));q=1;}
+    else{
+      F=30;q=Math.max(1,Math.round(30*us.perDay/pack));
+      if(q*pack<30*us.perDay*0.8)q++;
+    }
+    const newShelf=state.policy==='min'
+      ?Math.min(it.max,Math.max(pack*q,Math.round(pack*q+us.perDay*3)))
+      :it.max;
+    out.push({it,F,q,newShelf,oldShelf:us.maxShelf,costM:us.costM,
+      already:it.subFreq===F&&(it.subQty||1)===q,
+      shelfUp:state.policy==='min'&&(newShelf-us.maxShelf)>=4});
+  }
+  return out;
+}
+function renderBundle(){
+  const box=document.getElementById('bundlePlan');
+  if(!bundleOpen){box.replaceChildren();return;}
+  const props=bundleProposal();
+  if(!props.length){box.replaceChildren(h('div',{class:'empty-note'},'消費データのある品目がまだありません'));return;}
+  const checks=[];
+  const rows=props.map(p=>{
+    const cb=h('input',{type:'checkbox','aria-label':p.it.name+'を対象にする'});
+    cb.checked=!p.shelfUp&&!p.already;
+    checks.push({cb,p});
+    return h('tr',{},
+      h('td',{},cb),
+      h('td',{},h('span',{class:'nm'},(p.it.emoji||'📦')+' '+p.it.name),
+        p.already?h('span',{class:'sub',style:'margin-left:6px'},'設定済み'):null),
+      h('td',{},freqLabel(p.F)+(p.q>1?' ・ '+p.q+'パック（'+(p.q*Math.max(1,p.it.pack||1))+p.it.unit+'）':' ・ 1パック')),
+      h('td',{},'棚目安 '+p.oldShelf+'→'+p.newShelf+p.it.unit+(p.shelfUp?' ⚠️棚が大きく増える':'')),
+      h('td',{class:'num'},p.costM?'月約¥'+fmtN(p.costM):'—'));
+  });
+  // 現状の割引（設定済み10%・未設定0%）→ おまとめ15%との差額
+  const saving=props.filter(p=>!p.shelfUp&&p.costM)
+    .reduce((a,p)=>a+p.costM*(0.15-(p.it.subFreq>0?0.10:0)),0);
+  box.replaceChildren(
+    h('div',{class:'tbl-wrap',style:'margin-top:10px'},
+      h('table',{class:'rowtab',style:'min-width:600px'},
+        h('thead',{},h('tr',{},h('th',{},''),h('th',{},'品名'),
+          h('th',{},'提案（月イチ基準）'),h('th',{},'棚への影響'),h('th',{class:'num'},'コスト'))),
+        h('tbody',{},rows))),
+    h('div',{class:'stock-summary',style:'margin:8px 0'},
+      h('div',{},'頻度を30日の倍数に揃えて同じ「お届け日」を指定すると、月イチのお届けに全品目が相乗りできます（2ヶ月ごとの品目は隔月で相乗り）。'),
+      saving>0?h('div',{},'5品目以上で15%OFF達成時の追加節約: 月約¥'+fmtN(saving)+'（通常10%OFF比）'):null),
+    h('button',{class:'btn small',onclick:()=>{
+      let n=0;
+      for(const {cb,p} of checks)if(cb.checked){p.it.subFreq=p.F;p.it.subQty=p.q;n++;}
+      if(!n){toast('品目が選択されていません');return;}
+      saveAll();bundleOpen=false;renderStock();
+      toast(n+'品目をおまとめ基準に揃えました。Amazon側でも同じお届け日に設定してください');
+    }},'選択した品目に適用'));
+}
+
+/* ---------- ストック ---------- */
+function stockStatus(it){
+  if(it.qty<=0)return 'crit';
+  if(it.qty<=it.low)return 'warn';
+  return 'ok';
+}
+function renderStock(){
+  renderStockSummary();
+  renderBundle();
+  const grid=document.getElementById('stockGrid');
+  const minMode=state.policy==='min';
+  grid.replaceChildren(
+    h('table',{class:'rowtab',style:'min-width:640px'},
+      h('thead',{},h('tr',{},
+        h('th',{},'品名'),h('th',{class:'num'},'在庫'),
+        h('th',{},'定期おトク便'),h('th',{},'状態'),h('th',{style:'text-align:right'},'操作'))),
+      h('tbody',{},state.stock.map(it=>{
+        const st=stockStatus(it),us=usageStats(it),pack=Math.max(1,it.pack||1);
+        const flags=[];
+        if(st==='crit')flags.push(h('div',{class:'st-flag warn'},'🚨 在庫切れ'));
+        else if(st==='warn')flags.push(h('div',{class:'st-flag warn'},'⚠️ 残りわずか'));
+        if(us&&us.overstock)flags.push(h('div',{class:'st-flag warn',
+          title:'いま在庫が多め。次回のお届けをAmazon側でスキップすると棚が空きます'},'📦 多め→スキップ'));
+        if(us&&us.fit==='late')flags.push(h('div',{class:'st-flag warn',
+          title:'届く前に在庫が切れそう。短い間隔がおすすめ'},'⚠️ 頻度が長い'));
+        else if(us&&us.fit==='surplus')flags.push(h('div',{class:'st-flag mut',
+          title:'余りがちかも。長い間隔でもOK'},'💤 余りがち'));
+        else if(us&&us.fit==='ok')flags.push(h('div',{class:'st-flag okc'},'✅ ペース適合'));
+        if(!flags.length)flags.push(h('div',{class:'st-flag mut'},'—'));
+        const sel=h('select',{class:'sub-sel','aria-label':it.name+'の定期便頻度',onchange:ev=>{
+          it.subFreq=+ev.target.value;
+          if(it.subFreq===0)it.subQty=1;
+          saveAll();renderStock();
+          toast(it.subFreq>0?'「'+it.name+'」の定期便を'+freqLabel(it.subFreq)+'に設定しました'
+            :'「'+it.name+'」の定期便設定を解除しました');
+        }},FREQS.map(f=>h('option',{value:f.d},f.label+(us&&f.d===us.rec?'（おすすめ）':''))));
+        sel.value=String(it.subFreq||0);
+        return h('tr',{},
+          h('td',{},
+            h('div',{class:'nm'},(it.emoji||'📦')+' '+it.name),
+            us?h('div',{class:'sub',title:paceText(it,us)+' ／ '+shelfText(it,us)
+                +(it.price>0?' ／ 単価約¥'+fmtN(it.price/Math.max(1,it.pack||1))+'/'+it.unit:'')},paceShort(it,us))
+              :h('div',{class:'sub'},'消費データ集め中（− で記録）')),
+          h('td',{class:'num'},
+            h('button',{class:'mini-btn icon','aria-label':'1つ使った',title:'1つ使った（消費ペースを学習）',onclick:()=>{
+              if(it.qty>0){it.qty--;(it.usage=it.usage||[]).push({ts:Date.now(),n:1});saveAll();renderStock();}
+            }},'−'),
+            h('span',{style:'margin:0 6px'},it.qty+'/'+it.max+it.unit),
+            h('button',{class:'mini-btn icon','aria-label':'増やす（数の修正）',title:'数の修正',onclick:()=>{
+              it.qty=Math.min(it.max,it.qty+1);saveAll();renderStock();}},'＋')),
+          h('td',{},sel,
+            (it.subQty||1)>1?h('span',{class:'sub',style:'margin-left:6px;white-space:nowrap'},'×'+it.subQty+'パック'):null,
+            us&&!(it.subFreq>0)?h('div',{style:'margin-top:4px'},
+              h('button',{class:'mini-btn',style:'font-size:11px;padding:2px 8px',onclick:()=>{
+                it.subFreq=us.rec;saveAll();renderStock();
+                toast('「'+it.name+'」の定期便を'+freqLabel(us.rec)+'に設定しました');
+              }},'⚡ おすすめ: '+freqLabel(us.rec))):null),
+          h('td',{},flags.slice(0,2)),
+          h('td',{style:'text-align:right;white-space:nowrap'},
+            (()=>{const add=pack*Math.max(1,it.subQty||1);
+              return h('button',{class:'mini-btn',title:minMode?'1回分（'+add+it.unit+'）届いた':'満タンまで補充した',onclick:()=>{
+                it.qty=minMode?Math.min(it.max,it.qty+add):it.max;
+                it.lastRefill=Date.now();saveAll();
+                addRecord({name:it.name+'の補充',cat:'shop',min:5,coef:2.0,emoji:'🧴',ts:Date.now()},{silent:true});
+                toast(minMode
+                  ?'+'+add+it.unit+' 届きました。補充を記録しました（👻 +10pt）'
+                  :'満タンまで補充を記録しました（👻 +10pt）');
+              }},minMode?'📦 届いた':'補充');})(),
+            ' ',
+            h('a',{class:'mini-btn',target:'_blank',rel:'noopener',title:'Amazonで注文（検索ページを開く）',
+              href:'https://www.amazon.co.jp/s?k='+encodeURIComponent(it.kw||it.name)},'🛒'),
+            ' ',
+            h('button',{class:'mini-btn icon',title:'品目を削除',onclick:()=>{
+              if(confirm('「'+it.name+'」をストック一覧から削除しますか？')){
+                state.stock=state.stock.filter(x=>x.id!==it.id);saveAll();renderStock();
+              }
+            }},'✕')));
+      }))));
+}
+
+/* ---------- 週間レポート ---------- */
+function weekReportData(){
+  const now=new Date(),d1=864e5;
+  const ws=weekStartMon(now).getTime(),elapsed=Date.now()-ws;
+  const wk=recordsIn(ws,ws+7*d1),lastWk=recordsIn(ws-7*d1,ws-7*d1+elapsed);
+  const inv=wk.filter(isInvisible);
+  const byName=new Map();
+  for(const r of inv){
+    const o=byName.get(r.name)||{name:r.name,n:0};o.n++;byName.set(r.name,o);
+  }
+  return {
+    from:new Date(ws),to:startOfDay(now),
+    n:wk.length,min:sumMin(wk),pt:sumPt(wk),th:sumThanks(wk),
+    lastPt:sumPt(lastWk),
+    invN:inv.length,invShare:wk.length?Math.round(sumPt(inv)/Math.max(sumPt(wk),1)*100):0,
+    invTop:[...byName.values()].sort((a,b)=>b.n-a.n).slice(0,6),
+    cats:CAT_ORDER.map(c=>({c,pt:sumPt(wk.filter(r=>r.cat===c))})).filter(x=>x.pt>0),
+    users:state.users.map(u=>{
+      const urs=wk.filter(r=>(r.user||'u1')===u.id);
+      return {id:u.id,name:u.name,pt:sumPt(urs),n:urs.length,th:sumThanks(urs)};
+    }),
+  };
+}
+function renderReport(){
+  const d=weekReportData();
+  const card=document.getElementById('reportCard');
+  const diff=d.pt-d.lastPt;
+  card.replaceChildren(
+    h('h2',{},'今週の家事レポート（'+fmtMD(d.from)+'〜'+fmtMD(d.to)+'）'),
+    h('div',{class:'desc'},'月曜起点。家族に見せて、がんばりを共有しましょう'),
+    h('div',{style:'margin:6px 0 2px'},
+      h('span',{class:'hero-num'},fmtN(d.pt)),h('span',{class:'hero-unit'},'pt')),
+    h('div',{class:'t-delta '+(diff>=0?'up':'down'),style:'margin-bottom:4px'},
+      (diff>=0?'▲':'▼')+fmtN(Math.abs(diff))+'pt 先週の同時点比'),
+    h('div',{class:'rep-stats'},
+      h('div',{class:'rs'},h('div',{class:'v'},fmtN(d.n)+'件'),h('div',{class:'l'},'家事の回数')),
+      h('div',{class:'rs'},h('div',{class:'v'},fmtDur(d.min)),h('div',{class:'l'},'合計時間')),
+      h('div',{class:'rs'},h('div',{class:'v'},'👏 '+fmtN(d.th)),h('div',{class:'l'},'ありがとう')),
+      h('div',{class:'rs'},h('div',{class:'v'},d.invShare+'%'),h('div',{class:'l'},'見えにくい家事の割合'))),
+    h('div',{style:'font-size:12.5px;font-weight:700;margin-top:6px'},'カテゴリ内訳'),
+    h('div',{class:'share-bar'},d.cats.map(x=>
+      h('div',{style:'background:'+CATS[x.c].color+';flex:'+x.pt}))),
+    h('div',{class:'share-legend'},d.cats.map(x=>
+      h('div',{class:'sl'},
+        h('i',{style:'background:'+CATS[x.c].color}),
+        h('span',{class:'n'},CATS[x.c].name),
+        h('span',{class:'v'},fmtN(x.pt)+'pt（'+Math.round(x.pt/Math.max(d.pt,1)*100)+'%）')))),
+    h('div',{style:'font-size:12.5px;font-weight:700;margin-top:16px'},'夫婦の分担'),
+    h('div',{class:'share-legend',style:'margin-top:4px'},d.users.map(x=>
+      h('div',{class:'sl'},
+        h('i',{style:'background:'+USER_COLORS[x.id]+';border-radius:50%'}),
+        h('span',{class:'n'},x.name),
+        h('span',{class:'v'},fmtN(x.pt)+'pt（'+Math.round(x.pt/Math.max(d.pt,1)*100)+'%）・'+x.n+'件・👏'+x.th)))),
+    h('div',{style:'font-size:12.5px;font-weight:700;margin-top:16px'},'👻 実はこんなにある「見えにくい家事」（'+d.invN+'件）'),
+    h('ul',{class:'rank'},d.invTop.length?d.invTop.map(t=>h('li',{},
+      h('span',{class:'rk-name'},t.name),
+      h('span',{class:'rk-meta'},'×'+t.n+'回')))
+      :h('div',{class:'empty-note'},'今週はまだ記録がありません'))
+  );
+}
+function reportText(){
+  const d=weekReportData();
+  const lines=[
+    '【今週の家事レポート '+fmtMD(d.from)+'〜'+fmtMD(d.to)+'】',
+    '合計 '+d.n+'件・'+fmtDur(d.min)+'（'+fmtN(d.pt)+'pt）',
+    'うち"見えにくい家事" '+d.invN+'件（ポイントの'+d.invShare+'%）',
+    '分担: '+d.users.map(x=>x.name+' '+Math.round(x.pt/Math.max(d.pt,1)*100)+'%').join('・'),
+    ...d.invTop.map(t=>'・'+t.name+' ×'+t.n),
+    'もらったありがとう：'+d.th+'回 👏',
+    '（カジミエ 家事みえる化ダッシュボードより）',
+  ];
+  return lines.join('\n');
+}
+
+/* ---------- タブ・テーマ・初期化 ---------- */
+function renderAll(){
+  renderKPIs();renderStacked();renderCatBars();renderInvisible();renderShare();renderRecent();
+  renderRecordTab();renderClean();renderStock();renderReport();syncUserSeg();
+}
+document.getElementById('tabs').addEventListener('click',ev=>{
+  const b=ev.target.closest('button[data-tab]');if(!b)return;
+  document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('active',x===b));
+  for(const id of ['dashboard','record','clean','stock','report'])
+    document.getElementById('tab-'+id).hidden=(id!==b.dataset.tab);
+});
+document.getElementById('rangeSeg').addEventListener('click',ev=>{
+  const b=ev.target.closest('button[data-days]');if(!b)return;
+  state.range=+b.dataset.days;
+  document.querySelectorAll('#rangeSeg button').forEach(x=>x.classList.toggle('active',x===b));
+  renderStacked();renderCatBars();renderInvisible();renderShare();
+});
+document.getElementById('bundleBtn').addEventListener('click',()=>{
+  bundleOpen=!bundleOpen;renderBundle();
+});
+document.getElementById('chartBySeg').addEventListener('click',ev=>{
+  const b=ev.target.closest('button[data-b]');if(!b)return;
+  state.chartBy=b.dataset.b;
+  document.querySelectorAll('#chartBySeg button').forEach(x=>x.classList.toggle('active',x===b));
+  renderStacked();
+});
+document.getElementById('tblToggle').addEventListener('click',()=>{
+  const tw=document.getElementById('tblWrap'),sw=document.getElementById('stackWrap');
+  const showTbl=tw.hidden;
+  tw.hidden=!showTbl;sw.style.display=showTbl?'none':'';
+  document.getElementById('tblToggle').textContent=showTbl?'グラフで見る':'表で見る';
+});
+document.getElementById('freeForm').addEventListener('submit',ev=>{
+  ev.preventDefault();
+  const name=document.getElementById('ff-name').value.trim();
+  const min=Math.max(1,+document.getElementById('ff-min').value||15);
+  const coef=+document.getElementById('ff-coef').value;
+  const cat=document.getElementById('ff-cat').value;
+  const dv=document.getElementById('ff-date').value;
+  if(!name)return;
+  let ts=Date.now();
+  if(dv){
+    const [yy,mm,dd]=dv.split('-').map(Number);
+    const picked=new Date(yy,mm-1,dd,12,0);
+    if(dayKey(picked)!==dayKey(new Date()))ts=picked.getTime();
+  }
+  addRecord({name,cat,min,coef,emoji:'📝',ts});
+  document.getElementById('ff-name').value='';
+});
+document.getElementById('stockForm').addEventListener('submit',ev=>{
+  ev.preventDefault();
+  const name=document.getElementById('st-name').value.trim();
+  if(!name)return;
+  const max=Math.max(1,+document.getElementById('st-max').value||3);
+  state.stock.push({
+    id:uid(),name,emoji:'📦',max,
+    qty:Math.min(max,Math.max(0,+document.getElementById('st-qty').value||0)),
+    low:Math.max(0,+document.getElementById('st-low').value||1),
+    unit:document.getElementById('st-unit').value.trim()||'個',
+    kw:document.getElementById('st-kw').value.trim(),
+    pack:Math.max(1,+document.getElementById('st-pack').value||1),
+    price:(+document.getElementById('st-price').value||null),
+    usage:[],subFreq:0,subQty:1,lastRefill:null,
+  });
+  saveAll();renderStock();toast('「'+name+'」をストックに追加しました');
+  ev.target.reset();
+});
+document.getElementById('reseedBtn').addEventListener('click',()=>{
+  if(!confirm('現在の記録をすべて消して、サンプルデータを入れ直しますか？'))return;
+  state.records=seedRecords();
+  state.stock=seedStockItems();
+  state.clean=seedCleanTasks();
+  saveAll();renderAll();toast('サンプルデータを再生成しました');
+});
+document.getElementById('cleanForm').addEventListener('submit',ev=>{
+  ev.preventDefault();
+  const name=document.getElementById('cf-name').value.trim();
+  if(!name)return;
+  state.clean.push({id:uid(),name,emoji:'🧹',
+    cycle:+document.getElementById('cf-cycle').value||30,
+    min:Math.max(1,+document.getElementById('cf-min').value||15),
+    cat:document.getElementById('cf-cat').value,coef:1.6,last:Date.now()});
+  saveAll();renderClean();toast('「'+name+'」を定期掃除に追加しました');
+  document.getElementById('cf-name').value='';
+});
+document.getElementById('clearBtn').addEventListener('click',()=>{
+  if(!confirm('すべての記録を削除してゼロから始めますか？（ストック一覧は残ります）'))return;
+  state.records=[];saveAll();renderAll();toast('記録を削除しました');
+});
+document.getElementById('copyBtn').addEventListener('click',async()=>{
+  const text=reportText();
+  try{
+    await navigator.clipboard.writeText(text);
+    toast('レポートをコピーしました。家族に共有しましょう 📮');
+  }catch(e){
+    const ta=document.createElement('textarea');
+    ta.value=text;document.body.appendChild(ta);ta.select();
+    document.execCommand('copy');ta.remove();
+    toast('レポートをコピーしました');
+  }
+});
+function syncPolicySeg(){
+  document.querySelectorAll('#policySeg button').forEach(x=>x.classList.toggle('active',x.dataset.p===state.policy));
+  document.getElementById('policyNote').textContent=state.policy==='min'
+    ?'1回1パックずつ・消費に合わせた間隔で受け取り、棚を最小限にします（小分けの単価高はおまとめ割引でカバー）'
+    :'容量いっぱいまで補充する前提で、余裕のある間隔をおすすめします';
+}
+function syncUserSeg(){
+  const seg=document.getElementById('userSeg');
+  seg.replaceChildren(...state.users.map(u=>
+    h('button',{class:state.curUser===u.id?'active':'',onclick:()=>{
+      state.curUser=u.id;saveJSON(LS.curUser,u.id);syncUserSeg();
+      toast('入力ユーザー: '+u.name);
+    }},h('i',{class:'u-dot',style:'background:'+USER_COLORS[u.id]}),u.name)));
+}
+document.getElementById('userForm').addEventListener('submit',ev=>{
+  ev.preventDefault();
+  state.users=[
+    {id:'u1',name:document.getElementById('un-u1').value.trim()||'わたし'},
+    {id:'u2',name:document.getElementById('un-u2').value.trim()||'パートナー'},
+  ];
+  saveJSON(LS.users,state.users);
+  renderAll();toast('ユーザー名を保存しました');
+});
+document.getElementById('policySeg').addEventListener('click',ev=>{
+  const b=ev.target.closest('button[data-p]');if(!b)return;
+  state.policy=b.dataset.p;saveJSON(LS.policy,state.policy);
+  syncPolicySeg();renderStock();
+  toast(state.policy==='min'
+    ?'省スペース方針に切り替えました（在庫を極力持たない提案になります）'
+    :'たっぷり安心方針に切り替えました（切らさないことを優先します）');
+});
+document.getElementById('themeBtn').addEventListener('click',()=>{
+  const root=document.documentElement;
+  const cur=root.dataset.theme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+  const next=cur==='dark'?'light':'dark';
+  root.dataset.theme=next;
+  try{localStorage.setItem(LS.theme,next);}catch(e){}
+  renderAll();
+});
+
+/* ---------- PWA ---------- */
+if('serviceWorker' in navigator&&(location.protocol==='https:'||['localhost','127.0.0.1'].includes(location.hostname))){
+  addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{});});
+}
+let deferredInstall=null;
+addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();
+  deferredInstall=e;
+  document.getElementById('installBtn').hidden=false;
+});
+document.getElementById('installBtn').addEventListener('click',async()=>{
+  if(!deferredInstall)return;
+  deferredInstall.prompt();
+  await deferredInstall.userChoice;
+  deferredInstall=null;
+  document.getElementById('installBtn').hidden=true;
+});
+addEventListener('appinstalled',()=>toast('ホーム画面に追加されました 🎉'));
+
+(function init(){
+  try{
+    const th=localStorage.getItem(LS.theme);
+    if(th)document.documentElement.dataset.theme=th;
+  }catch(e){}
+  state.records=loadJSON(LS.rec,null)||[];
+  state.stock=loadJSON(LS.stock,null)||[];
+  state.users=loadJSON(LS.users,null)||DEFAULT_USERS;
+  state.curUser=loadJSON(LS.curUser,'u1');
+  // 旧データにユーザーを補完（サンプルデータ想定でランダムに分担）
+  state.records=state.records.map(r=>r.user?r:{...r,user:Math.random()<0.6?'u1':'u2'});
+  const seeded=loadJSON(LS.seeded,false);
+  if(!seeded&&state.records.length===0){
+    state.records=seedRecords();
+    state.stock=seedStockItems();
+    saveJSON(LS.seeded,true);
+    saveAll();
+  }
+  if(state.stock.length===0&&!seeded)state.stock=seedStockItems();
+  // 旧バージョンの保存データに使用履歴・お届け量フィールドを補完
+  state.stock=state.stock.map(it=>{
+    const s=SEED_STOCK.find(x=>x.name===it.name);
+    const base={...it,pack:it.pack||(s&&s.pack)||1,subFreq:it.subFreq||0,subQty:it.subQty||1,
+      lastRefill:it.lastRefill||null,price:it.price!=null?it.price:(s?s.price:null)};
+    if(!it.usage){
+      if(s&&s.usageDays)return {...base,subFreq:it.subFreq||s.subFreq||0,usage:genUsage(s.usageDays),
+        lastRefill:Date.now()-Math.round((it.max-it.qty)*s.usageDays*864e5)};
+      return {...base,usage:[]};
+    }
+    return base;
+  });
+  state.clean=loadJSON(LS.clean,null)||[];
+  if(!state.clean.length)state.clean=seedCleanTasks();
+  saveAll();
+  state.policy=loadJSON(LS.policy,'min');
+  syncPolicySeg();
+  renderAll();
+})();
+</script>
+</body>
+</html>
