@@ -1,5 +1,5 @@
 /* カジミエ Service Worker — キャッシュ優先＋裏で更新（stale-while-revalidate） */
-const CACHE = 'kajimie-v1';
+const CACHE = 'kajimie-v2';
 const ASSETS = [
   './',
   './index.html',
