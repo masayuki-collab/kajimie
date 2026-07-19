@@ -183,6 +183,19 @@ table.rowtab{border-collapse:collapse;width:100%;font-size:13px}
 .st-flag.warn{color:var(--ink)}
 .st-flag.okc{color:var(--good-text)}
 .st-flag.mut{color:var(--muted)}
+.rowtab input.act{width:22px;height:22px;accent-color:var(--accent);cursor:pointer;
+  vertical-align:middle;margin:0}
+/* タッチ端末（iPad・スマホ）ではボタン類を大きく */
+@media (pointer:coarse){
+  .rowtab input.act{width:26px;height:26px}
+  .rowtab td{padding:11px 8px}
+  .mini-btn{padding:8px 14px;font-size:13px}
+  .mini-btn.icon{width:36px;height:36px;line-height:34px;font-size:16px}
+  .sub-sel{padding:8px;font-size:13px}
+  .chip{padding:10px 16px;font-size:13px}
+  .thanks-btn{padding:8px 16px}
+  .seg button{padding:9px 16px}
+}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{border:1px solid var(--border);background:var(--surface);border-radius:999px;
   padding:6px 14px;font-size:12.5px;cursor:pointer;color:var(--ink)}
@@ -325,7 +338,7 @@ footer.app{color:var(--muted);font-size:11.5px;margin-top:24px;line-height:1.8}
 
   <div class="card">
     <h2>ワンタップで記録</h2>
-    <div class="desc">👻 は「見えにくい家事」。「記録」を押すとその場で追加されます。リストは ✎ で編集・✕ で削除できます</div>
+    <div class="desc">👻 は「見えにくい家事」。左の✓を付けると記録され、外すと今日の分を取り消せます。複数回やったら ＋、リストは ✎ で編集・✕ で削除</div>
     <div class="tbl-wrap" id="choreGrid" style="margin-top:4px"></div>
   </div>
 
@@ -447,14 +460,14 @@ footer.app{color:var(--muted);font-size:11.5px;margin-top:24px;line-height:1.8}
 <section id="tab-clean" hidden>
   <div class="card">
     <h2>定期掃除の期限</h2>
-    <div class="desc">「風呂の防カビは1ヶ月に1回」「換気扇は3ヶ月に1回」のような定期掃除の期限を見える化。「✔ やった」を押すと完了として記録され、家事ポイントにもなります（👻 見えにくい家事）</div>
+    <div class="desc">「風呂の防カビは1ヶ月に1回」「換気扇は3ヶ月に1回」のような定期掃除の期限を見える化。左の✓を付けると完了記録＆次の期限がセットされ、家事ポイントにもなります（👻 見えにくい家事）</div>
     <div class="stock-summary" id="cleanSummary"></div>
     <div class="tbl-wrap" id="cleanGrid" style="margin-top:4px"></div>
   </div>
 
   <div class="card">
     <h2 id="cleanFormTitle">定期掃除を追加</h2>
-    <div class="desc">追加したタスクは「未記録」から始まり、はじめて「✔ やった」を押した日から周期のカウントが始まります（見えにくさ係数1.6で記録）。一覧の ✎ でいつでも編集できます</div>
+    <div class="desc">追加したタスクは「未記録」から始まり、はじめて ✓ を付けた日から周期のカウントが始まります（見えにくさ係数1.6で記録）。一覧の ✎ でいつでも編集できます</div>
     <form class="free" id="cleanForm">
       <div style="grid-column:span 2">
         <label for="cf-name">タスク名</label>
@@ -1077,27 +1090,53 @@ function renderRecent(){
 
 /* ---------- 記録タブ ---------- */
 function renderRecordTab(){
+  const tKey=dayKey(new Date());
   document.getElementById('choreGrid').replaceChildren(
-    h('table',{class:'rowtab',style:'min-width:560px'},
+    h('table',{class:'rowtab',style:'min-width:580px'},
       h('thead',{},h('tr',{},
-        h('th',{},'家事'),h('th',{},'カテゴリ'),
+        h('th',{style:'width:36px'},'✓'),h('th',{},'家事'),h('th',{},'カテゴリ'),
         h('th',{class:'num'},'時間'),h('th',{class:'num'},'ポイント'),h('th',{style:'text-align:right'},'操作'))),
-      h('tbody',{},state.chores.map(c=>h('tr',{},
-        h('td',{},h('span',{class:'nm'},(c.emoji||'📝')+' '+c.name),
-          c.coef>=INVISIBLE_COEF?h('span',{title:'見えにくい家事（係数'+c.coef+'）',style:'margin-left:5px'},'👻'):null),
-        h('td',{},h('span',{class:'cat-tag'},h('i',{style:'background:'+CATS[c.cat].color}),CATS[c.cat].name)),
-        h('td',{class:'num'},c.min+'分'),
-        h('td',{class:'num'},Math.round(c.min*c.coef)+'pt'),
-        h('td',{style:'text-align:right;white-space:nowrap'},
-          h('button',{class:'mini-btn',onclick:()=>addRecord({name:c.name,cat:c.cat,min:c.min,coef:c.coef,emoji:c.emoji,ts:Date.now()})},'記録'),
-          ' ',
-          h('button',{class:'mini-btn icon',title:'編集',onclick:()=>startChoreEdit(c)},'✎'),
-          ' ',
-          h('button',{class:'mini-btn icon',title:'リストから削除',onclick:()=>{
-            if(confirm('「'+c.name+'」をワンタップのリストから削除しますか？（過去の記録は残ります）')){
-              state.chores=state.chores.filter(x=>x.id!==c.id);saveAll();renderRecordTab();
+      h('tbody',{},state.chores.map(c=>{
+        const cnt=state.records.filter(r=>r.name===c.name&&dayKey(new Date(r.ts))===tKey).length;
+        const cb=h('input',{type:'checkbox',class:'act','aria-label':c.name+'を今日やったとして記録',
+          title:cnt?'チェックを外すと今日の記録を取り消します':'チェックすると記録されます',
+          onchange:()=>{
+            if(cb.checked){
+              addRecord({name:c.name,cat:c.cat,min:c.min,coef:c.coef,emoji:c.emoji,ts:Date.now()});
+            }else{
+              let removeId=null;
+              for(let i=state.records.length-1;i>=0;i--){
+                const r=state.records[i];
+                if(r.name===c.name&&dayKey(new Date(r.ts))===tKey){removeId=r.id;break;}
+              }
+              if(removeId){
+                state.records=state.records.filter(r=>r.id!==removeId);
+                saveAll();renderAll();
+                toast('「'+c.name+'」の今日の記録を取り消しました');
+              }
             }
-          }},'✕')))))));
+          }});
+        cb.checked=cnt>0;
+        return h('tr',{},
+          h('td',{},cb,cnt>1?h('div',{class:'sub'},'×'+cnt):null),
+          h('td',{},h('span',{class:'nm'},(c.emoji||'📝')+' '+c.name),
+            c.coef>=INVISIBLE_COEF?h('span',{title:'見えにくい家事（係数'+c.coef+'）',style:'margin-left:5px'},'👻'):null),
+          h('td',{},h('span',{class:'cat-tag'},h('i',{style:'background:'+CATS[c.cat].color}),CATS[c.cat].name)),
+          h('td',{class:'num'},c.min+'分'),
+          h('td',{class:'num'},Math.round(c.min*c.coef)+'pt'),
+          h('td',{style:'text-align:right;white-space:nowrap'},
+            h('button',{class:'mini-btn icon',title:'もう1回記録する（1日に複数回やったとき）',onclick:()=>{
+              addRecord({name:c.name,cat:c.cat,min:c.min,coef:c.coef,emoji:c.emoji,ts:Date.now()});
+            }},'＋'),
+            ' ',
+            h('button',{class:'mini-btn icon',title:'編集',onclick:()=>startChoreEdit(c)},'✎'),
+            ' ',
+            h('button',{class:'mini-btn icon',title:'リストから削除',onclick:()=>{
+              if(confirm('「'+c.name+'」をワンタップのリストから削除しますか？（過去の記録は残ります）')){
+                state.chores=state.chores.filter(x=>x.id!==c.id);saveAll();renderRecordTab();
+              }
+            }},'✕')));
+      }))));
   document.getElementById('namelessChips').replaceChildren(...state.nameless.map(nm=>
     h('button',{class:'chip',onclick:()=>addRecord({name:nm.name,cat:nm.cat||'other',min:nm.min,coef:2.0,emoji:'👻',ts:Date.now()})},
       nm.name+'（'+nm.min+'分）',
@@ -1294,11 +1333,11 @@ function renderClean(){
     nOver||nSoon
       ?'🚨 期限切れ '+nOver+'件 ・ ⚠️ 3日以内 '+nSoon+'件 ・ 余裕あり '+(rows.length-nOver-nSoon-nNew)+'件'+(nNew?' ・ 未記録 '+nNew+'件':'')
       :(nNew===rows.length&&rows.length>0
-        ?'🚀 まずは終わっている掃除の「✔ やった」を押して、周期のカウントを始めましょう'
+        ?'🚀 まずは終わっている掃除に ✓ を付けて、周期のカウントを始めましょう'
         :'✅ すべて期限内です'+(nNew?'（未記録 '+nNew+'件）':''))));
   document.getElementById('cleanGrid').replaceChildren(
-    h('table',{class:'rowtab',style:'min-width:640px'},
-      h('thead',{},h('tr',{},h('th',{},'タスク'),h('th',{},'周期'),h('th',{},'期限'),h('th',{style:'text-align:right'},'操作'))),
+    h('table',{class:'rowtab',style:'min-width:660px'},
+      h('thead',{},h('tr',{},h('th',{style:'width:36px'},'✓'),h('th',{},'タスク'),h('th',{},'周期'),h('th',{},'期限'),h('th',{style:'text-align:right'},'操作'))),
       h('tbody',{},rows.map(({t,i})=>{
         const fill=i.st==='over'?'var(--crit)':i.st==='soon'?'var(--warn)':'var(--accent)';
         const flag=i.st==='new'?h('span',{class:'st-flag mut'},'未記録')
@@ -1313,7 +1352,28 @@ function renderClean(){
         const lastTxt=t.last
           ?'前回 '+fmtMD(new Date(t.last))+'（'+WD[new Date(t.last).getDay()]+'）'
           :'前回の記録なし';
+        const doneToday=!!t.last&&dayKey(new Date(t.last))===dayKey(new Date());
+        const cb=h('input',{type:'checkbox',class:'act','aria-label':t.name+'をやったとして記録',
+          title:doneToday?'チェックを外すと今日の完了を取り消します':'チェックすると完了記録＆次の期限がセットされます',
+          onchange:()=>{
+            if(cb.checked){
+              const rec=makeRecord({name:t.name,cat:t.cat,min:t.min,coef:t.coef,emoji:t.emoji,ts:Date.now()});
+              t.undoLast=t.last;t.undoRec=rec.id;
+              t.last=Date.now();
+              state.records.push(rec);
+              saveAll();renderAll();
+              toast('「'+t.name+'」を完了にしました（'+uName(rec.user)+' +'+rec.pt+'pt）');
+            }else{
+              state.records=state.records.filter(r=>r.id!==t.undoRec);
+              t.last=('undoLast' in t)?t.undoLast:null;
+              delete t.undoLast;delete t.undoRec;
+              saveAll();renderAll();
+              toast('「'+t.name+'」の完了を取り消しました');
+            }
+          }});
+        cb.checked=doneToday;
         return h('tr',{},
+          h('td',{},cb),
           h('td',{},
             h('div',{class:'nm'},t.emoji+' '+t.name+' ',h('span',{title:'見えにくい家事（係数'+t.coef+'）'},'👻')),
             h('div',{class:'sub'},lastTxt+'・'+t.min+'分・'+Math.round(t.min*t.coef)+'pt')),
@@ -1324,13 +1384,8 @@ function renderClean(){
                 h('div',{style:'background:'+fill+';width:'+i.pct+'%'})),
               flag),
             i.next?h('div',{class:'sub'},'次回期限 '+fmtMD(new Date(i.next))+'（'+WD[new Date(i.next).getDay()]+'）')
-              :h('div',{class:'sub'},'「✔ やった」で周期スタート')),
+              :h('div',{class:'sub'},'✓ を付けると周期スタート')),
           h('td',{style:'text-align:right;white-space:nowrap'},
-            h('button',{class:'mini-btn',onclick:()=>{
-              t.last=Date.now();
-              addRecord({name:t.name,cat:t.cat,min:t.min,coef:t.coef,emoji:t.emoji,ts:Date.now()});
-            }},'✔ やった'),
-            ' ',
             h('button',{class:'mini-btn icon',title:'編集',onclick:()=>startCleanEdit(t)},'✎'),
             ' ',
             h('button',{class:'mini-btn icon',title:'削除',onclick:()=>{
