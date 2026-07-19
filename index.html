@@ -325,14 +325,68 @@ footer.app{color:var(--muted);font-size:11.5px;margin-top:24px;line-height:1.8}
 
   <div class="card">
     <h2>ワンタップで記録</h2>
-    <div class="desc">👻 は「見えにくい家事」。「記録」を押すとその場で追加されます</div>
+    <div class="desc">👻 は「見えにくい家事」。「記録」を押すとその場で追加されます。リストは ✎ で編集・✕ で削除できます</div>
     <div class="tbl-wrap" id="choreGrid" style="margin-top:4px"></div>
   </div>
 
   <div class="card">
+    <h2 id="choreFormTitle">定番の家事を追加</h2>
+    <div class="desc">ワンタップのリストに追加します（名前・時間・見えにくさは ✎ からいつでも変更可能）</div>
+    <form class="free" id="choreForm">
+      <div style="grid-column:span 2">
+        <label for="ch-name">家事の名前</label>
+        <input id="ch-name" type="text" placeholder="例：ペットの世話" required>
+      </div>
+      <div>
+        <label for="ch-emoji">絵文字（任意）</label>
+        <input id="ch-emoji" type="text" maxlength="2" placeholder="🐕">
+      </div>
+      <div>
+        <label for="ch-cat">カテゴリ</label>
+        <select id="ch-cat"></select>
+      </div>
+      <div>
+        <label for="ch-min">時間（分）</label>
+        <input id="ch-min" type="number" min="1" max="600" value="15">
+      </div>
+      <div>
+        <label for="ch-coef">見えにくさ係数</label>
+        <select id="ch-coef">
+          <option value="1">1.0 よく見える</option>
+          <option value="1.1">1.1</option>
+          <option value="1.2">1.2 まあ見える</option>
+          <option value="1.3">1.3</option>
+          <option value="1.4">1.4</option>
+          <option value="1.5" selected>1.5 見えにくい</option>
+          <option value="1.6">1.6</option>
+          <option value="1.7">1.7</option>
+          <option value="1.8">1.8 かなり見えにくい</option>
+          <option value="1.9">1.9</option>
+          <option value="2">2.0 ほぼ見えない</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" type="submit" id="ch-submit">追加する</button>
+        <button class="btn ghost" type="button" id="ch-cancel" hidden>キャンセル</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
     <h2>👻 名もなき家事</h2>
-    <div class="desc">気づかれないけど誰かがやっている家事。全部 係数2.0 で記録します</div>
+    <div class="desc">気づかれないけど誰かがやっている家事。タップで記録（全部 係数2.0）、✕ で削除できます</div>
     <div class="chips" id="namelessChips"></div>
+    <form class="free" id="namelessForm" style="margin-top:14px">
+      <div style="grid-column:span 2">
+        <label for="nm-name">名もなき家事を追加</label>
+        <input id="nm-name" type="text" placeholder="例：観葉植物の水やり" required>
+      </div>
+      <div>
+        <label for="nm-min">時間（分）</label>
+        <input id="nm-min" type="number" min="1" max="120" value="5">
+      </div>
+      <div><button class="btn" type="submit">追加する</button></div>
+    </form>
   </div>
 
   <div class="card">
@@ -605,16 +659,19 @@ function seedStockItems(){
 }
 
 /* ---------- 状態 ---------- */
-const LS = {rec:'kajimie.records', stock:'kajimie.stock', seeded:'kajimie.seeded', theme:'kajimie.theme', policy:'kajimie.policy', users:'kajimie.users', curUser:'kajimie.curUser', clean:'kajimie.clean'};
+const LS = {rec:'kajimie.records', stock:'kajimie.stock', seeded:'kajimie.seeded', theme:'kajimie.theme', policy:'kajimie.policy', users:'kajimie.users', curUser:'kajimie.curUser', clean:'kajimie.clean', chores:'kajimie.chores', nameless:'kajimie.nameless'};
 const DEFAULT_USERS=[{id:'u1',name:'わたし'},{id:'u2',name:'パートナー'}];
 const USER_COLORS={u1:'var(--s1)',u2:'var(--s8)'};
-const state = {records:[], stock:[], clean:[], range:7, policy:'min', users:DEFAULT_USERS, curUser:'u1', chartBy:'cat'};
+const state = {records:[], stock:[], clean:[], chores:[], nameless:[], range:7, policy:'min', users:DEFAULT_USERS, curUser:'u1', chartBy:'cat'};
 function uName(id){const u=state.users.find(x=>x.id===id);return u?u.name:'—';}
 
 function uid(){return (crypto.randomUUID ? crypto.randomUUID() : Date.now()+'-'+Math.random());}
 function loadJSON(k,f){try{const v=localStorage.getItem(k);return v?JSON.parse(v):f;}catch(e){return f;}}
 function saveJSON(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
-function saveAll(){saveJSON(LS.rec,state.records);saveJSON(LS.stock,state.stock);saveJSON(LS.clean,state.clean);}
+function saveAll(){
+  saveJSON(LS.rec,state.records);saveJSON(LS.stock,state.stock);saveJSON(LS.clean,state.clean);
+  saveJSON(LS.chores,state.chores);saveJSON(LS.nameless,state.nameless);
+}
 
 /* ---------- 日付ユーティリティ ---------- */
 const WD = ['日','月','火','水','木','金','土'];
@@ -1021,22 +1078,41 @@ function renderRecent(){
 /* ---------- 記録タブ ---------- */
 function renderRecordTab(){
   document.getElementById('choreGrid').replaceChildren(
-    h('table',{class:'rowtab',style:'min-width:520px'},
+    h('table',{class:'rowtab',style:'min-width:560px'},
       h('thead',{},h('tr',{},
         h('th',{},'家事'),h('th',{},'カテゴリ'),
-        h('th',{class:'num'},'時間'),h('th',{class:'num'},'ポイント'),h('th',{},''))),
-      h('tbody',{},CHORES.map(c=>h('tr',{},
-        h('td',{},h('span',{class:'nm'},c.emoji+' '+c.name),
+        h('th',{class:'num'},'時間'),h('th',{class:'num'},'ポイント'),h('th',{style:'text-align:right'},'操作'))),
+      h('tbody',{},state.chores.map(c=>h('tr',{},
+        h('td',{},h('span',{class:'nm'},(c.emoji||'📝')+' '+c.name),
           c.coef>=INVISIBLE_COEF?h('span',{title:'見えにくい家事（係数'+c.coef+'）',style:'margin-left:5px'},'👻'):null),
         h('td',{},h('span',{class:'cat-tag'},h('i',{style:'background:'+CATS[c.cat].color}),CATS[c.cat].name)),
         h('td',{class:'num'},c.min+'分'),
         h('td',{class:'num'},Math.round(c.min*c.coef)+'pt'),
-        h('td',{style:'text-align:right'},
-          h('button',{class:'mini-btn',onclick:()=>addRecord({name:c.name,cat:c.cat,min:c.min,coef:c.coef,emoji:c.emoji,ts:Date.now()})},'記録')))))));
-  document.getElementById('namelessChips').replaceChildren(...NAMELESS.map(nm=>
-    h('button',{class:'chip',onclick:()=>addRecord({name:nm.name,cat:nm.cat,min:nm.min,coef:2.0,emoji:'👻',ts:Date.now()})},
-      nm.name+'（'+nm.min+'分）')
+        h('td',{style:'text-align:right;white-space:nowrap'},
+          h('button',{class:'mini-btn',onclick:()=>addRecord({name:c.name,cat:c.cat,min:c.min,coef:c.coef,emoji:c.emoji,ts:Date.now()})},'記録'),
+          ' ',
+          h('button',{class:'mini-btn icon',title:'編集',onclick:()=>startChoreEdit(c)},'✎'),
+          ' ',
+          h('button',{class:'mini-btn icon',title:'リストから削除',onclick:()=>{
+            if(confirm('「'+c.name+'」をワンタップのリストから削除しますか？（過去の記録は残ります）')){
+              state.chores=state.chores.filter(x=>x.id!==c.id);saveAll();renderRecordTab();
+            }
+          }},'✕')))))));
+  document.getElementById('namelessChips').replaceChildren(...state.nameless.map(nm=>
+    h('button',{class:'chip',onclick:()=>addRecord({name:nm.name,cat:nm.cat||'other',min:nm.min,coef:2.0,emoji:'👻',ts:Date.now()})},
+      nm.name+'（'+nm.min+'分）',
+      h('span',{title:'リストから削除',style:'margin-left:8px;color:var(--muted)',onclick:ev=>{
+        ev.stopPropagation();
+        if(confirm('「'+nm.name+'」を名もなき家事のリストから削除しますか？')){
+          state.nameless=state.nameless.filter(x=>x.id!==nm.id);saveAll();renderRecordTab();
+        }
+      }},'✕'))
   ));
+  const chc=document.getElementById('ch-cat');
+  if(!chc.options.length){
+    chc.replaceChildren(...CAT_ORDER.map(c=>h('option',{value:c},CATS[c].name)));
+    chc.value='other';
+  }
   const sel=document.getElementById('ff-cat');
   if(!sel.options.length)
     sel.replaceChildren(...CAT_ORDER.map(c=>h('option',{value:c},CATS[c].name)));
@@ -1178,16 +1254,26 @@ function templateCleanTasks(){
   return SEED_CLEAN.map(t=>({id:uid(),name:t.name,emoji:t.emoji,cycle:t.cycle,
     min:t.min,cat:t.cat,coef:t.coef,last:null}));
 }
+function templateChores(){
+  return CHORES.map(c=>({id:uid(),name:c.name,cat:c.cat,min:c.min,coef:c.coef,emoji:c.emoji}));
+}
+function templateNameless(){
+  return NAMELESS.map(n=>({id:uid(),name:n.name,cat:n.cat,min:n.min}));
+}
 function applyTemplate(){
   state.records=[];
   state.stock=templateStockItems();
   state.clean=templateCleanTasks();
+  state.chores=templateChores();
+  state.nameless=templateNameless();
   saveJSON(LS.seeded,'template');saveAll();renderAll();
 }
 function applyDemo(){
   state.records=seedRecords();
   state.stock=seedStockItems();
   state.clean=seedCleanTasks();
+  state.chores=templateChores();
+  state.nameless=templateNameless();
   saveJSON(LS.seeded,'demo');saveAll();renderAll();
 }
 function cleanInfo(t){
@@ -1517,6 +1603,58 @@ document.getElementById('tblToggle').addEventListener('click',()=>{
   tw.hidden=!showTbl;sw.style.display=showTbl?'none':'';
   document.getElementById('tblToggle').textContent=showTbl?'グラフで見る':'表で見る';
 });
+/* 定番の家事リストの編集モード（追加フォームを流用） */
+let editChoreId=null;
+function syncChoreForm(){
+  const c=editChoreId&&state.chores.find(x=>x.id===editChoreId);
+  document.getElementById('choreFormTitle').textContent=c?'「'+c.name+'」を編集':'定番の家事を追加';
+  document.getElementById('ch-submit').textContent=c?'更新する':'追加する';
+  document.getElementById('ch-cancel').hidden=!c;
+}
+function startChoreEdit(c){
+  editChoreId=c.id;
+  document.getElementById('ch-name').value=c.name;
+  document.getElementById('ch-emoji').value=c.emoji||'';
+  document.getElementById('ch-cat').value=c.cat;
+  document.getElementById('ch-min').value=c.min;
+  document.getElementById('ch-coef').value=String(c.coef);
+  syncChoreForm();
+  document.getElementById('choreFormTitle').scrollIntoView({behavior:'smooth',block:'center'});
+}
+document.getElementById('ch-cancel').addEventListener('click',()=>{
+  editChoreId=null;document.getElementById('choreForm').reset();syncChoreForm();
+});
+document.getElementById('choreForm').addEventListener('submit',ev=>{
+  ev.preventDefault();
+  const name=document.getElementById('ch-name').value.trim();
+  if(!name)return;
+  const vals={name,
+    emoji:document.getElementById('ch-emoji').value.trim()||'📝',
+    cat:document.getElementById('ch-cat').value,
+    min:Math.max(1,+document.getElementById('ch-min').value||15),
+    coef:+document.getElementById('ch-coef').value||1.5};
+  const c=editChoreId&&state.chores.find(x=>x.id===editChoreId);
+  if(c){
+    Object.assign(c,vals);
+    toast('「'+name+'」を更新しました');
+  }else{
+    state.chores.push({id:uid(),...vals});
+    toast('「'+name+'」をワンタップのリストに追加しました');
+  }
+  editChoreId=null;
+  saveAll();renderRecordTab();syncChoreForm();
+  ev.target.reset();
+});
+document.getElementById('namelessForm').addEventListener('submit',ev=>{
+  ev.preventDefault();
+  const name=document.getElementById('nm-name').value.trim();
+  if(!name)return;
+  state.nameless.push({id:uid(),name,cat:'other',
+    min:Math.max(1,+document.getElementById('nm-min').value||5)});
+  saveAll();renderRecordTab();
+  toast('「'+name+'」を名もなき家事に追加しました');
+  document.getElementById('nm-name').value='';
+});
 document.getElementById('freeForm').addEventListener('submit',ev=>{
   ev.preventDefault();
   const name=document.getElementById('ff-name').value.trim();
@@ -1751,6 +1889,9 @@ document.getElementById('obDemo').addEventListener('click',()=>{
   });
   state.clean=loadJSON(LS.clean,null)||[];
   if(seeded&&!state.clean.length)state.clean=seedCleanTasks();
+  // 家事リスト・名もなき家事リスト（未保存ならテンプレートから）
+  state.chores=loadJSON(LS.chores,null)||templateChores();
+  state.nameless=loadJSON(LS.nameless,null)||templateNameless();
   saveAll();
   state.policy=loadJSON(LS.policy,'min');
   syncPolicySeg();
